@@ -2,7 +2,8 @@
 
 
 # Import libraries
-library(tidylibrary(janitor)
+library(tidyverse)
+library(janitor)
 library(readxl)
 library(dplyr)
 library(gtools)

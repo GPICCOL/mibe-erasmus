@@ -72,12 +72,14 @@ df_locations_available_clean <-
   df_locations_available %>% select(-area_erasmus, -paese)
   
 df_locations_complete <- left_join(df_student_destination_clean, df_locations_available_clean, 
-            by = c("nomeaccordo" = "nome_accordo"), keep = TRUE, relationship = "many-to-many")
+            by = c("nomeaccordo" = "nome_accordo"), keep = TRUE, relationship = "many-to-many") %>% 
+  select(-cognome, -nome, -corso_di_studi) %>% 
+  left_join(df_student_personal, ., by = join_by(matricola), keep = FALSE, relationship = "many-to-many")
 
 
 ### Validate Language Requirements and provide appropriate notes to df_locations_complete
 ### Create appropriate file with language mappings and scores on language levels
-x <-
+l <-
   df_locations_complete %>% 
   select(cognome, nome, matricola, nomeaccordo, nome_accordo, lingua_1, livello_lingua_1, lingua_2, livello_lingua_2) %>% 
   left_join(., df_student_language, by = join_by(matricola), relationship = "many-to-many") %>% 
@@ -85,8 +87,8 @@ x <-
   mutate_at(vars(starts_with("livello")), ~map_language_levels(.)) # Replace the values of livello_LANGUAGE variables
   
 ### Evaluate language requierments for each student and retunr list of student/destination they qualify for
-x <- 
-  x %>%   
+l <- 
+  l %>%   
   mutate(language_requirement = if_else(
     lingua_1 == language & livello_lingua_1 <= livello |
     lingua_2 == language & livello_lingua_2 <= livello, 
@@ -96,25 +98,32 @@ x <-
   select(matricola, nomeaccordo, language_requirement)
 
 ### Evaluate program requirements at the destination
+#d <-
+  df_locations_complete %>%
+    select(cognome:tipo_di_iscrizione, choice_number:nomeaccordo, nome_accordo:corsi_di_studio) %>% View() ### WORKING ON THIS ONE!
 
 ### Create file with student-location selections completely validate
 ### and appropriate notes for failing each test of validation
 df_locations_validated <- df_locations_complete
 
 ### Merge language requirement results back into df_locations_validated
-df_locations_validated <- left_join(df_locations_validated, x, 
+df_locations_validated <- left_join(df_locations_validated, l, 
                                    by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
   mutate(language_requirement = replace(language_requirement, is.na(language_requirement), "Language requirement not met"))
 
 ### Merge program requirement results back into df_locations_validated
 
 
+### Matching Algorithm
+### 
+### 
+### 
 
 
-### Consolidate intro one tidy dataframe
-df_student <- left_join(df_student_personal, df_student_language) %>% 
-  left_join(., df_student_destinations)
-
+### Output Generation
+### 
+### 
+### 
 
 
 
