@@ -100,7 +100,7 @@ l <-
 ### Evaluate program requirements at the destination
 #d <-
   df_locations_complete %>%
-    select(cognome:tipo_di_iscrizione, choice_number:nomeaccordo, nome_accordo:corsi_di_studio) %>% View() ### WORKING ON THIS ONE!
+    select(cognome:tipo_di_iscrizione, choice_number:nomeaccordo, nome_accordo:corsi_di_studio) ### WORKING ON THIS ONE!
 
 ### Create file with student-location selections completely validate
 ### and appropriate notes for failing each test of validation

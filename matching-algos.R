@@ -1,43 +1,87 @@
-
-
-
 # Import libraries
-library(tidyverse)
-library(janitor)
-library(readxl)
-library(dplyr)
-library(gtools)
 
-# Read the file containing static information
-df_students <- read_excel(path = "./data/static/student_static.xlsx", sheet = 1, 
-                          range = cell_cols("A:E")) %>% clean_names() %>% 
-  mutate(email = tolower(email), supervisor_email = tolower(supervisor_email)) 
 
-df_supervisors <- read_excel(path = "./data/static/supervisor_static.xlsx", sheet = 1, 
-                             range = cell_cols("A:D")) %>% clean_names() %>% 
-  mutate(email = tolower(email)) 
+# Read needed data objects
+df_locations_validated %>% glimpse()
 
-# Set basic parameters and values
-# Define the start date as "Monday, August 7, 2023"
-semester_start_date <- ymd("2023-07-31")
-week_data <- tibble(
-  week = 0:20,  # Sequence of week numbers from 0 to 20
-  day = format(semester_start_date + weeks(0:20), "%A, %B %d, %Y")  # Calculate Monday dates
-)
+# Prepare data for the matching algo
+df_student_ranked <- 
+  df_locations_validated %>%
+  select(cognome:matricola, punteggio_normalizzato_a_100) %>% 
+  arrange(desc(punteggio_normalizzato_a_100)) %>% 
+  distinct()
 
-certification_teaching_hours <- tibble(
-  program = c("PK3", "Secondary Holmes", "Health & PE", "GT Math & Science", 
-              "GT Humanities", "Elementary", "Dual Cert", "Elem Holmes"),
-  `Required Hours` = c(180, 180, 120, 180, 130, 180, 120, 180)
-)
+df_student_choices <- 
+  df_locations_validated %>% 
+  select(matricola, nomeaccordo, choice_number) %>% 
+  arrange(matricola, choice_number)
 
-# Prepare dataframes
-df_static <- left_join(df_students, df_supervisors, by = c("supervisor_email" = "email"))
+df_locations_slots <- 
+  df_locations_available_clean %>% 
+  select(nome_accordo, n_posti) %>% 
+  mutate(posti_disponibili = n_posti)
 
-file_list <- list.files(path = "./data/weeks/", pattern = "^week[[:digit:]]{1,2}.xlsx") %>% 
-  paste0("./data/weeks/", .) %>% 
-  mixedsort()
-df_weeks <- lapply(file_list, read_excel, range = cell_cols("A:E"))
+# Function to check and update posti_disponibili
+assign_find_match <- function(df, choice) {
+  print(choice)
+  if (choice %in% df$nome_accordo) {
+    row <- df %>% filter(nome_accordo == choice)
+    print(row)
+    if (row$posti_disponibili > 0) {
+      df <- 
+        df %>%
+        mutate(posti_disponibili = ifelse(nome_accordo == choice, posti_disponibili - 1, posti_disponibili))
+      print(df %>% filter(nome_accordo == choice))
+      return(list(udf = df, a = choice))  # Return the updated df_locations_slots dataframe and the assigned value of "choice"
+    }
+  }
+  return(NULL)  # Return no match
+}
+
+
+student_assignment <- NULL
+updated_df <- df_locations_slots
+#ranked_students <- df_student_choices %>% select(matricola) %>% pull() %>% as.numeric()
+ranked_students <-c(512786, 518361)
+df_assignments <- tibble(matricola = numeric(), assigned_locations = character())
+
+# Loop through students in order of their rank
+for (m in ranked_students) {
+  
+  # Extract the preference of the given student
+  choices <- df_locations_validated %>% 
+    filter(matricola == m) %>% 
+    pull(nomeaccordo)
+  
+  # Loop through each choice until a valid one is found
+  for (choice in choices) {
+    assignment_results <- assign_find_match(updated_df, choice)
+    student_assignment <- assignment_results$a
+    updated_df <- assignment_results$udf
+    if (!is.null(student_assignment)) {
+      break  # Stop execution if a valid choice is found
+    }
+    if (is.null(student_assignment)) {
+      student_assignment <- "All valid choices were taken - no assignment possible at this time"
+  }
+  }
+  # Append the results to the tibble
+  df_assignments <- bind_rows(df_assignments , tibble(matricola = m, assigned_locations = student_assignment))
+}
+
+
+assign_students(512786)
+
+df_student_choices %>% filter(matricola %in% ranked_students)
+
+
+assign_students <- function(location_df, students_df, st_matricola) {
+  #Initialize variables
+  student_assignment <- NULL
+}
+
+
+
 
 processing_week <- function(raw_week) {
   processed_week <- raw_week %>% clean_names() %>% 
