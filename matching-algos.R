@@ -1,5 +1,5 @@
 # Import libraries
-
+source("function_definitions.R")
 
 # Read needed data objects
 df_locations_validated %>% glimpse()
@@ -9,7 +9,8 @@ df_student_ranked <-
   df_locations_validated %>%
   select(cognome:matricola, punteggio_normalizzato_a_100) %>% 
   arrange(desc(punteggio_normalizzato_a_100)) %>% 
-  distinct()
+  distinct() %>% 
+  mutate(posizione_graduatoria = row_number())
 
 df_student_choices <- 
   df_locations_validated %>% 
@@ -21,26 +22,12 @@ df_locations_slots <-
   select(nome_accordo, n_posti) %>% 
   mutate(posti_disponibili = n_posti)
 
-# Function to check and update posti_disponibili
-assign_find_match <- function(df, choice) {
-  print(choice)
-  if (choice %in% df$nome_accordo) {
-    row <- df %>% filter(nome_accordo == choice) %>% distinct()
-    print(row)
-    if (row$posti_disponibili > 0) {
-      df <- 
-        df %>%
-        mutate(posti_disponibili = ifelse(nome_accordo == choice, posti_disponibili - 1, posti_disponibili))
-      print(df %>% filter(nome_accordo == choice))
-      return(list(udf = df, a = choice))  # Return the updated df_locations_slots dataframe and the assigned value of "choice"
-    }
-  }
-  return(list(udf = df, a = NULL))  # Return no match
-}
 
+# Assignment loop going through students by rank and destinations by order of preference
 student_assignment <- NULL
-updated_df <- df_locations_slots
-df_assignments <- tibble(matricola = numeric(), assigned_locations = character())
+updated_df <- df_locations_slots %>% 
+  filter(!(nome_accordo == "D  DRESDEN02_0410_5months" & n_posti == 2))
+df_assignment <- tibble(matricola = numeric(), assigned_locations = character())
 #ranked_students <-c(512786, 518361, 512799, 512787, 515499)
 ranked_students <- 
   df_student_ranked %>% 
@@ -69,57 +56,35 @@ for (m in ranked_students) {
   }
   }
   # Append the results to the tibble
-  df_assignments <- bind_rows(df_assignments , tibble(matricola = m, assigned_locations = student_assignment))
+  df_assignment <- bind_rows(df_assignment , tibble(matricola = m, assigned_locations = student_assignment))
 }
 
+# Creation of dataframes to pass for output
+df_assignment <- df_assignment %>%
+  mutate(matricola = as.character(matricola))
 
-assign_students(512786)
+df_assignment <- 
+  df_student_ranked %>% 
+  select(matricola, posizione_graduatoria) %>% 
+  left_join(., df_assignment, by = join_by(matricola), keep = FALSE)
 
-df_student_choices %>% filter(matricola == 516028)
+df_locations_remaining <- 
+  df_locations_available %>% 
+  select(paese, sede_ospitante, isced, nome_accordo) %>% 
+  left_join(., updated_df, by = c("nome_accordo" = "nome_accordo"), keep = FALSE, relationship = "many-to-many")
 
-
-assign_students <- function(location_df, students_df, st_matricola) {
-  #Initialize variables
-  student_assignment <- NULL
-}
-
-
-
-
-processing_week <- function(raw_week) {
-  processed_week <- raw_week %>% clean_names() %>% 
-    mutate(total_hours = observation_hours + participation_hours + teaching_hours) %>% 
-    bind_rows()
-  
-  processed_week <- left_join(df_static, processed_week, by = c("email" = "username")) %>% 
-    mutate(responded_survey = ifelse(!is.na(observation_hours), 1, 0))
-  
-  return(processed_week)
-}
-
-df_weeks_complete <- lapply(df_weeks, processing_week)
-
-df <- map2(df_weeks_complete, seq_along(df_weeks_complete), ~mutate(.x, week = .y -1)) %>% 
-  map(select, week, everything()) %>% 
-  bind_rows() %>%
-  rename(`Last Name` = last_name.x,
-         `First Name` = first_name.x,
-         Program = program.x,
-         Observations = observation_hours,
-         Participation = participation_hours,
-         Teaching = teaching_hours,
-         Supervisor = last_name.y,
-         `Family Engagement` = family_engagement) %>% 
-  mutate(Supervisor_name = paste(Supervisor, first_name.y, sep = ", ")) %>% 
-  left_join(., week_data, by = "week") %>% # attach the date
-  left_join(., certification_teaching_hours, by = c("Program" = "program")) # attach the program
-
-# Save the df objects as an RDS file
-saveRDS(df, file = "df_weeks_complete.rds")
-
-#call reports programmatically
-#
+### Output Generation Call
+source("output_generation.R")
 
 
-
+# assign_students(512786)
+# 
+# df_student_choices %>% filter(matricola == 516028)
+# 
+# 
+# assign_students <- function(location_df, students_df, st_matricola) {
+#   #Initialize variables
+#   student_assignment <- NULL
+# }
+# 
 

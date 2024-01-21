@@ -1,5 +1,6 @@
 ### Function Definitions File
 
+# Data cleaning and validation functions
 # Define a function to map text language levels to integers
 map_language_levels <- function(x) {
   case_when(
@@ -24,4 +25,22 @@ map_language_name <- function(x) {
     x == "" ~ "",
     TRUE ~ NA 
   )
+}
+
+# Matching and assignment functions
+# Function to check and update posti_disponibili
+assign_find_match <- function(df, choice) {
+  print(choice)
+  if (choice %in% df$nome_accordo) {
+    row <- df %>% filter(nome_accordo == choice) %>% distinct()
+    print(row)
+    if (row$posti_disponibili > 0) {
+      df <- 
+        df %>%
+        mutate(posti_disponibili = ifelse(nome_accordo == choice, posti_disponibili - 1, posti_disponibili))
+      print(df %>% filter(nome_accordo == choice))
+      return(list(udf = df, a = choice))  # Return the updated df_locations_slots dataframe and the assigned value of "choice"
+    }
+  }
+  return(list(udf = df, a = NULL))  # Return no match
 }
