@@ -25,7 +25,7 @@ df_locations_slots <-
 assign_find_match <- function(df, choice) {
   print(choice)
   if (choice %in% df$nome_accordo) {
-    row <- df %>% filter(nome_accordo == choice)
+    row <- df %>% filter(nome_accordo == choice) %>% distinct()
     print(row)
     if (row$posti_disponibili > 0) {
       df <- 
@@ -35,15 +35,18 @@ assign_find_match <- function(df, choice) {
       return(list(udf = df, a = choice))  # Return the updated df_locations_slots dataframe and the assigned value of "choice"
     }
   }
-  return(NULL)  # Return no match
+  return(list(udf = df, a = NULL))  # Return no match
 }
-
 
 student_assignment <- NULL
 updated_df <- df_locations_slots
-#ranked_students <- df_student_choices %>% select(matricola) %>% pull() %>% as.numeric()
-ranked_students <-c(512786, 518361)
 df_assignments <- tibble(matricola = numeric(), assigned_locations = character())
+#ranked_students <-c(512786, 518361, 512799, 512787, 515499)
+ranked_students <- 
+  df_student_ranked %>% 
+  select(matricola) %>% 
+  pull() %>% 
+  as.numeric()
 
 # Loop through students in order of their rank
 for (m in ranked_students) {
@@ -72,7 +75,7 @@ for (m in ranked_students) {
 
 assign_students(512786)
 
-df_student_choices %>% filter(matricola %in% ranked_students)
+df_student_choices %>% filter(matricola == 516028)
 
 
 assign_students <- function(location_df, students_df, st_matricola) {
