@@ -2,7 +2,12 @@
 source("function_definitions.R")
 
 # Read needed data objects
-df_locations_validated %>% glimpse()
+df_locations_validated <- 
+  df_locations_validated_all %>% 
+  filter(language_requirement == "Language requirement met successfully" & 
+           level_requirement == "Level requirement met successfully" &
+           isced_requirement == "ISCED requirement met successfully")
+
 
 # Prepare data for the matching algo
 df_student_ranked <- 

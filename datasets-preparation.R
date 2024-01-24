@@ -9,10 +9,18 @@ source("function_definitions.R")
 
 ### Data Ingestion
 ### Read files in and change all variable names
+
+# ISCED Code Conversion Table
+df_isced <- read_xlsx(path = "./data/tabella_conversione-ISCED_CODE.xlsx", sheet = "Sheet1", range = cell_cols("A1:B8")) %>% 
+  rename(isced_tabella_conversione = isced)
+  
+# List of students who have won the double degree assignment
 df_student_double_degree <- read_xlsx(path = "./data/dd-candidati.xlsx", sheet = "Sheet1", range = cell_cols("A:E")) %>% 
   rename(matricola = MATRICOLA, cognome = Last_Name, nome = First_Name, 
-         master = Master, codice_erasmus_sedi = CODICE_ERASMUS_SEDI)
+         master = Master, codice_erasmus_sedi = CODICE_ERASMUS_SEDI) %>% 
+  mutate(matricola = as.character(matricola))
 
+# List of available locations and their characteristics
 df_locations_available <- read_xlsx(path = "./data/sedi ERASTU 23-24 - Scienze Economiche e Aziendali-1.xlsx", 
                  sheet = "vereinbarungen", range = cell_cols("A:P")) %>% 
   rename(area_erasmus = `AREA DI STUDI ERASMUS`, nome_accordo = `NOME DELL'ACCORDO`,
@@ -24,6 +32,7 @@ df_locations_available <- read_xlsx(path = "./data/sedi ERASTU 23-24 - Scienze E
   certificazione_linguistica = `CERTIFICAZIONE LINGUISTICA`, 
   scadenza_urgente = `EVENTUALE SCADENZA APPLICATION URGENTE 1° SEMESTRE`)
 
+# List of participating students and their personal date
 df_student_personal <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx",
                  sheet = "Dati personali e carriera", range = cell_cols("A:N")) %>% 
   rename(cognome = COGNOME, nome = NOME, matricola = MATRICOLA, email_di_ateneo = `EMAIL DI ATENEO`, 
@@ -33,6 +42,7 @@ df_student_personal <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIE
          media_pesata = `MEDIA PESATA`, punteggio_di_merito = `PUNTEGGIO DI MERITO`, 
          punteggio_normalizzato_a_100 = `PUNTEGGIO NORMALIZZATO A 100`, note_personal = NOTE)
 
+# List of students destination selection
 df_student_destinations <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx",
                                sheet = "Destinazioni", range = cell_cols("A:V")) %>% 
   rename(cognome = COGNOME, nome = NOME, matricola = MATRICOLA, corso_di_studi = `CORSO DI STUDI`, 
@@ -46,6 +56,7 @@ df_student_destinations <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - 
          codiceerasmus_3 = `Codice Erasmus Istituzione (3)`, nomeaccordo_3 = `Nome dell'accordo (3)`, 
          numeroposti_3 = `Numero di posti per l'accordo (3)`, numeromesi_3 = `Numero di mesi (3)`)
 
+# List of students language competence
 df_student_language <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx",
                                      sheet = "Competenze linguistiche", range = cell_cols("A:H")) %>% 
   rename(cognome = COGNOME, nome = NOME, matricola = MATRICOLA, corso_studi = `CORSO DI STUDI`, 
@@ -93,24 +104,45 @@ l <-
     lingua_2 == language & livello_lingua_2 <= livello, 
     "Language requirement met successfully", "Language requirement not met")) %>% 
   distinct(across(-lingua_1:-language)) %>%
-  filter(language_requirement == "Language requirement met successfully") %>% 
+    filter(language_requirement == "Language requirement met successfully") %>% 
   select(matricola, nomeaccordo, language_requirement)
 
-### Evaluate program requirements at the destination
-#d <-
+### Evaluate program requirements at the destination.
+# Generate list of students in double degree
+d <- 
+  df_student_double_degree %>% 
+  select(matricola, codice_erasmus_sedi, master) %>% 
+  mutate(double_degree = paste("Double Degree Student, Location: ", codice_erasmus_sedi))
+
+# Validate if they have the correct livello di studio for each location and the correct ISCED
+d <-
   df_locations_complete %>%
-    select(cognome:tipo_di_iscrizione, choice_number:nomeaccordo, nome_accordo:corsi_di_studio) ### WORKING ON THIS ONE!
+    select(cognome:tipo_di_iscrizione, choice_number:nomeaccordo, nome_accordo:isced, livelli_di_studio, corsi_di_studio) %>%
+  left_join(., df_isced, by = join_by(corso_di_studi)) %>%
+  left_join(., d, by = join_by(matricola == matricola, codiceerasmus == codice_erasmus_sedi), keep = FALSE, relationship = "many-to-many") %>% 
+  mutate(livelli_di_studio_corrected = map_livelli_studio(livelli_di_studio)) %>% 
+  mutate(level_requirement = if_else(str_detect(livelli_di_studio_corrected, tipo_corso_di_studi), "Level requirement met successfully", "Level requirement not met")) %>% 
+  mutate(isced_clean = str_sub(isced, -4)) %>% 
+  mutate(isced_requirement = if_else(str_detect(isced_tabella_conversione, isced_clean), "ISCED requirement met successfully", "ISCED requirement not met")) %>% 
+  mutate(isced_requirement = if_else(anno_di_corso == 3, "ISCED requirement met successfully becasue student in third year", isced_requirement)) %>% 
+  select(matricola, nomeaccordo, level_requirement, isced_requirement)
 
-### Create file with student-location selections completely validate
-### and appropriate notes for failing each test of validation
-df_locations_validated <- df_locations_complete
+# ### NOT COMPLETE WORKING ON THIS
+# # Double Degree Students Case
+# double_degree_students <- 
+#   d %>% 
+#   filter(!is.na(double_degree)) %>%
+#   select(matricola) %>% 
+#   pull()
+# #### WORKING ON THIS
+  
 
-### Merge language requirement results back into df_locations_validated
-df_locations_validated <- left_join(df_locations_validated, l, 
+### Create file with student-location selections validated and appropriate notes for failing each test of validation
+### Merge language requirement and ISCED requirements results back into df_locations_complete
+df_locations_validated_all <- left_join(df_locations_complete, l, 
                                    by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
-  mutate(language_requirement = replace(language_requirement, is.na(language_requirement), "Language requirement not met"))
-
-### Merge program requirement results back into df_locations_validated
+  mutate(language_requirement = replace(language_requirement, is.na(language_requirement), "Language requirement not met")) %>% 
+  left_join(., d, by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo"))
 
 
 ### Matching Algorithm Call

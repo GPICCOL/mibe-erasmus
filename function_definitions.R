@@ -27,6 +27,19 @@ map_language_name <- function(x) {
   )
 }
 
+# Define a function to translate livelli di studio
+map_livelli_studio <- function(x) {
+  case_when(
+    x == "I" ~ "L2",
+    x == "II" ~ "LM",
+    x == "III" ~ "PhD",
+    x == "I, II" ~ "L2, LM",
+    x == "II, III" ~ "LM, PhD",
+    x == "I, II, III" ~ "L2, LM, PhD",
+    x == "" ~ "", TRUE ~ NA 
+  )
+}
+
 # Matching and assignment functions
 # Function to check and update posti_disponibili
 assign_find_match <- function(df, choice) {
