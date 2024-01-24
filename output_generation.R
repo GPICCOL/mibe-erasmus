@@ -25,10 +25,15 @@ df_esito_selezioni <-
   left_join(., x, by = join_by(matricola), keep = FALSE, )
 
 # Write output files
+## Assigned locations file
+## Remaining locations file for those that have not been completely filled out
+## File with all notes on why studnets did not get assigned a location
+##
 df_locations_remaining %>% glimpse()
 df_locations_remaining %>% View()
 df_esito_selezioni %>% glimpse()
 df_esito_selezioni %>% View()
+df_locations_validated_all %>% glimpse()
 
 # COGNOME	NOME	MATRICOLA	CORSO DI STUDI	TIPO CORSO DI STUDI	
 # PUNTEGGIO NORMALIZZATO A 100	PUNTEGGIO MOTIVAZIONE (max 50 punti)	

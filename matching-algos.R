@@ -1,7 +1,10 @@
 # Import libraries
 source("function_definitions.R")
 
-# Read needed data objects
+### Read needed data objects
+
+### Here we generate the list of student and valid locations by eliminating all the destinations
+### students selected but they do not qualify for
 df_locations_validated <- 
   df_locations_validated_all %>% 
   filter(language_requirement == "Language requirement met successfully" & 

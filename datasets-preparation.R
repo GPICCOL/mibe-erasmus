@@ -96,7 +96,9 @@ l <-
   mutate(language = map_language_name(lingua)) %>%
   mutate_at(vars(starts_with("livello")), ~map_language_levels(.)) # Replace the values of livello_LANGUAGE variables
   
-### Evaluate language requierments for each student and retunr list of student/destination they qualify for
+### Evaluate language requirements for each student and return list of student/destination
+### A student must meet or exeed the minimum language requirement set by the destination
+### on at least one of the two languages required
 l <- 
   l %>%   
   mutate(language_requirement = if_else(
@@ -108,12 +110,18 @@ l <-
   select(matricola, nomeaccordo, language_requirement)
 
 ### Evaluate program requirements at the destination.
+### There is a special "treatement" of the DD stuends, in that their allocation is done first
+### and they then should be assigned to the Erasmus location congruent to their DD allocation
 # Generate list of students in double degree
 d <- 
   df_student_double_degree %>% 
   select(matricola, codice_erasmus_sedi, master) %>% 
   mutate(double_degree = paste("Double Degree Student, Location: ", codice_erasmus_sedi))
 
+### This code implements the following rules
+### 1. A student must have chosen a location that offers schooling at the level they are at: triennale or magistrale
+### 2. A student must have chosen a location where the ISCED of their "corso di studi" is in the set of ISCEDs the location meets
+### 3. The above rule is superseded for students who are in the third year. For those students ISCED congurence is not required.
 # Validate if they have the correct livello di studio for each location and the correct ISCED
 d <-
   df_locations_complete %>%
@@ -139,6 +147,9 @@ d <-
 
 ### Create file with student-location selections validated and appropriate notes for failing each test of validation
 ### Merge language requirement and ISCED requirements results back into df_locations_complete
+### This file will list all students and all the locations they originally selected. For each of this location we have notes
+### either attesting that the students fulfills the requirement or that they do not. 
+### This file is needed in case students want to know why they did not qualify for a specific location of their choice
 df_locations_validated_all <- left_join(df_locations_complete, l, 
                                    by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
   mutate(language_requirement = replace(language_requirement, is.na(language_requirement), "Language requirement not met")) %>% 
