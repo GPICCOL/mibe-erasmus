@@ -86,6 +86,49 @@ df_locations_complete <- left_join(df_student_destination_clean, df_locations_av
   select(-cognome, -nome, -corso_di_studi) %>% 
   left_join(df_student_personal, ., by = join_by(matricola), keep = FALSE, relationship = "many-to-many")
 
+### Evaluate Double Degree students to eliminate those who are going to destinations *not erasmus*
+### To elminate the destinations that are not congruent with the assigned double degree destination
+### and produce appropriate messages
+### Generate list of students in double degree
+unique_erasmus_locations <- 
+  df_locations_available_clean %>% 
+  mutate(unique_erasmus_locations = str_extract(sede_ospitante, "^[^-]+")) %>% 
+  mutate(unique_erasmus_locations = str_trim(unique_erasmus_locations)) %>% 
+  select(unique_erasmus_locations) %>% 
+  pull()
+  
+
+df_dd_assignment_notes <- 
+  df_student_double_degree %>% 
+  mutate(double_degree_notes = if_else(codice_erasmus_sedi %in% unique_erasmus_locations, 
+                                       paste("Double Degree Student, Erasmus Location: ", codice_erasmus_sedi),
+                                       "Student assigned to location not in Erasmus list")) %>%
+  mutate(double_degree_notes = if_else(codice_erasmus_sedi == "no admitted", "Student not admitted to Double Degree Program", double_degree_notes)) 
+
+dd_students_not_admitted <-
+  df_dd_assignment_notes %>% 
+  filter(double_degree_notes == "Student not admitted to Double Degree Program") %>% 
+  select(matricola) %>% 
+  pull()
+
+dd_students_admitted <-
+  df_dd_assignment_notes %>% 
+  filter(str_starts(double_degree_notes, "Double Degree Student, Erasmus Location")) %>% 
+  select(matricola) %>% 
+  pull()
+  
+dd <- 
+  df_dd_assignment_notes %>% 
+  select(matricola, master, codice_erasmus_sedi, double_degree_notes) %>% 
+  left_join(df_locations_complete, ., by = c("matricola" = "matricola", "codiceerasmus" = "codice_erasmus_sedi")) %>% 
+  select(cognome:matricola, choice_number:nomeaccordo, master:double_degree_notes) %>% 
+  mutate(double_degree_notes = if_else(is.na(double_degree_notes) & matricola %in% dd_students_not_admitted, 
+                                       "Double Degree student not admitted to double degree",
+                                       double_degree_notes)) %>% 
+  mutate(double_degree_notes = if_else(is.na(double_degree_notes) & matricola %in% dd_students_admitted, 
+                                       "Student already assigned to different Double Degree destination",
+                                       double_degree_notes)) %>% 
+  select(matricola, nomeaccordo, double_degree_notes)
 
 ### Validate Language Requirements and provide appropriate notes to df_locations_complete
 ### Create appropriate file with language mappings and scores on language levels
@@ -109,14 +152,6 @@ l <-
     filter(language_requirement == "Language requirement met successfully") %>% 
   select(matricola, nomeaccordo, language_requirement)
 
-### Evaluate program requirements at the destination.
-### There is a special "treatement" of the DD stuends, in that their allocation is done first
-### and they then should be assigned to the Erasmus location congruent to their DD allocation
-# Generate list of students in double degree
-d <- 
-  df_student_double_degree %>% 
-  select(matricola, codice_erasmus_sedi, master) %>% 
-  mutate(double_degree = paste("Double Degree Student, Location: ", codice_erasmus_sedi))
 
 ### This code implements the following rules
 ### 1. A student must have chosen a location that offers schooling at the level they are at: triennale or magistrale
@@ -127,22 +162,13 @@ d <-
   df_locations_complete %>%
     select(cognome:tipo_di_iscrizione, choice_number:nomeaccordo, nome_accordo:isced, livelli_di_studio, corsi_di_studio) %>%
   left_join(., df_isced, by = join_by(corso_di_studi)) %>%
-  left_join(., d, by = join_by(matricola == matricola, codiceerasmus == codice_erasmus_sedi), keep = FALSE, relationship = "many-to-many") %>% 
+#  left_join(., d, by = join_by(matricola == matricola, codiceerasmus == codice_erasmus_sedi), keep = FALSE, relationship = "many-to-many") %>% 
   mutate(livelli_di_studio_corrected = map_livelli_studio(livelli_di_studio)) %>% 
   mutate(level_requirement = if_else(str_detect(livelli_di_studio_corrected, tipo_corso_di_studi), "Level requirement met successfully", "Level requirement not met")) %>% 
   mutate(isced_clean = str_sub(isced, -4)) %>% 
   mutate(isced_requirement = if_else(str_detect(isced_tabella_conversione, isced_clean), "ISCED requirement met successfully", "ISCED requirement not met")) %>% 
   mutate(isced_requirement = if_else(anno_di_corso == 3, "ISCED requirement met successfully becasue student in third year", isced_requirement)) %>% 
   select(matricola, nomeaccordo, level_requirement, isced_requirement)
-
-# ### NOT COMPLETE WORKING ON THIS
-# # Double Degree Students Case
-# double_degree_students <- 
-#   d %>% 
-#   filter(!is.na(double_degree)) %>%
-#   select(matricola) %>% 
-#   pull()
-# #### WORKING ON THIS
   
 
 ### Create file with student-location selections validated and appropriate notes for failing each test of validation
@@ -153,9 +179,10 @@ d <-
 df_locations_validated_all <- left_join(df_locations_complete, l, 
                                    by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
   mutate(language_requirement = replace(language_requirement, is.na(language_requirement), "Language requirement not met")) %>% 
-  left_join(., d, by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo"))
+  left_join(., d, by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
+  left_join(., dd, by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo"))
 
 
 ### Matching Algorithm Call
-source("matching-algos.R")
+#source("matching-algos.R")
 
