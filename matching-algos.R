@@ -1,24 +1,41 @@
 # Import libraries
 source("function_definitions.R")
 
+
 ### Read needed data objects
+# At this stage I don't have data objects, I just keep the dfs in memory
 
 ### Here we generate the list of student and valid locations by eliminating all the destinations
-### students selected but they do not qualify for
+### students selected but they do not qualify for. This includes language requirements, 
+### level and isced requirements, as well as Erasmus destinations not available to Double
+### Degree students who need to go to the assigned Double Degree location
 df_locations_validated <- 
   df_locations_validated_all %>% 
-  filter(language_requirement == "Language requirement met successfully" & 
+  filter(language_requirement == "Language requirement met successfully" &
            level_requirement == "Level requirement met successfully" &
-           isced_requirement == "ISCED requirement met successfully")
+           isced_requirement == "ISCED requirement met successfully") %>%
+  filter(!double_degree_notes == "Student already assigned to different Double Degree destination" | is.na(double_degree_notes))
+
+### Here we override the "discrezionale" if needed 
+### Read a file with matricola and discrezionale and replace values where needed, all others stay at zero
 
 
-# Prepare data for the matching algo
+### Data preparation for the matching algo
+### First rank students and make a ranked students vector to use later
+# ranked_students <-c(512786, 518361, 512799, 512787, 515499) ## Used for testing a subset
 df_student_ranked <- 
   df_locations_validated %>%
-  select(cognome:matricola, punteggio_normalizzato_a_100) %>% 
-  arrange(desc(punteggio_normalizzato_a_100)) %>% 
+  select(cognome:matricola, punteggio_normalizzato_a_100, bonus:discrezionale) %>% 
+  mutate(punteggio_totale = punteggio_normalizzato_a_100 + bonus + discrezionale) %>% 
+  arrange(desc(punteggio_totale)) %>% 
   distinct() %>% 
   mutate(posizione_graduatoria = row_number())
+  
+ranked_students <- 
+  df_student_ranked %>% 
+  select(matricola) %>% 
+  pull() %>% 
+  as.numeric()
 
 df_student_choices <- 
   df_locations_validated %>% 
@@ -33,15 +50,8 @@ df_locations_slots <-
 
 # Assignment loop going through students by rank and destinations by order of preference
 student_assignment <- NULL
-updated_df <- df_locations_slots %>% 
-  filter(!(nome_accordo == "D  DRESDEN02_0410_5months" & n_posti == 2))
+updated_df <- df_locations_slots
 df_assignment <- tibble(matricola = numeric(), assigned_locations = character())
-#ranked_students <-c(512786, 518361, 512799, 512787, 515499)
-ranked_students <- 
-  df_student_ranked %>% 
-  select(matricola) %>% 
-  pull() %>% 
-  as.numeric()
 
 # Loop through students in order of their rank
 for (m in ranked_students) {
@@ -82,17 +92,11 @@ df_locations_remaining <-
   left_join(., updated_df, by = c("nome_accordo" = "nome_accordo"), keep = FALSE, relationship = "many-to-many")
 
 ### Output Generation Call
-source("output_generation.R")
+# Remove unnecessary objects
+objects_to_keep <- c("df_locations_validated_all", "df_dd_assignment_notes", "df_locations_remaining", "df_assignment")
+all_objects <- ls()
+rm(list = setdiff(all_objects, objects_to_keep))
+rm(all_objects)
 
-
-# assign_students(512786)
-# 
-# df_student_choices %>% filter(matricola == 516028)
-# 
-# 
-# assign_students <- function(location_df, students_df, st_matricola) {
-#   #Initialize variables
-#   student_assignment <- NULL
-# }
-# 
+#source("output_generation.R")
 

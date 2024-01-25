@@ -176,13 +176,24 @@ d <-
 ### This file will list all students and all the locations they originally selected. For each of this location we have notes
 ### either attesting that the students fulfills the requirement or that they do not. 
 ### This file is needed in case students want to know why they did not qualify for a specific location of their choice
-df_locations_validated_all <- left_join(df_locations_complete, l, 
-                                   by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
+df_locations_validated_all <- 
+  df_locations_complete %>% 
+  mutate(bonus = if_else(matricola %in% dd_students_admitted, 50, 25)) %>% 
+  mutate(discrezionale = 0) %>% 
+  left_join(., l, by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
   mutate(language_requirement = replace(language_requirement, is.na(language_requirement), "Language requirement not met")) %>% 
   left_join(., d, by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
   left_join(., dd, by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo"))
 
 
 ### Matching Algorithm Call
-#source("matching-algos.R")
+# Remove unnecessary objects
+objects_to_keep <- c("df_locations_validated_all", "df_dd_assignment_notes", "df_locations_available_clean", "df_locations_available")
+all_objects <- ls()
+rm(list = setdiff(all_objects, objects_to_keep))
+rm(all_objects)
+
+
+# Run next script
+source("matching-algos.R")
 
