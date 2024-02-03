@@ -87,7 +87,7 @@ df_locations_complete <- left_join(df_student_destination_clean, df_locations_av
   left_join(df_student_personal, ., by = join_by(matricola), keep = FALSE, relationship = "many-to-many")
 
 ### Evaluate Double Degree students to eliminate those who are going to destinations *not erasmus*
-### To elminate the destinations that are not congruent with the assigned double degree destination
+### To eliminate the destinations that are not congruent with the assigned double degree destination
 ### and produce appropriate messages
 ### Generate list of students in double degree
 unique_erasmus_locations <- 

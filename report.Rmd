@@ -1,0 +1,140 @@
+---
+title: "Integration Report"
+author: "Gabriele"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(readxl)
+library(tidyverse)
+```
+
+## Introduzione
+Questo report serve per strutturare la nostra conversazione riguardo ai dati in input. E' organizzato per "Issues" in ordine abbastanza sparso. (NB: il mio sistema e' in ingelese, quindi non ho lettere accentate o correttore... scusate eventualy erroi or accenti mancanti)
+
+## Issue 1 - Variabili in Input e nome file
+
+### Nome files
+Al momento ingestiamo i seguenti file di input:
+
+* sedi ERASTU 23-24 - Scienze Economiche e Aziendali-1.xlsx
+* selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx
+* tabella_conversione-ISCED_CODE.xlsx
+* Double Degreee candidati.xlsx
+
+Tali file vanno rinominati usando:
+
+1. Zero spazi bianchi o caratteri speciali
+2. Solo lettere minuscole
+3. Il trattino - o il trattino basso _ per separare eventuali parole nel nome del file
+4. Un nome che non cambia di anno in anno (quindi seenza riferimenti alla data o anno). Per tenere annate separate potete usare cartelle diverse nella vostra struttura dati
+
+### Nome variabili
+Ho al momento creato una tabella di conversione di tutti i nomi delle variabili in quanto mi avevate informato che molti dati vengono da sistemi esterni. Presumo quindi che non abbiate il controllo della nomenclature delle variabili. Inoltre, avendo gia fatto la conversione a questo punto non serve rinominarle. A seguito vi presento l'ordine e il testo specifico di ogni variabile che il mio sistema ingeste. Dovremo:
+
+1. Decidere se volete cambiarle (ordine o nome)
+2. Darmi la lista definitiva che non dovra cambiare nelle prossime iterazioni
+3. Pensare se si possono eliminare delle variabili. A me pare ci siano alcune ridondanze e alcune variabili inutili. Lascio a voi la decisione.
+
+```{r cars}
+
+df_isced <- read_xlsx(path = "./data/tabella_conversione-ISCED_CODE.xlsx", sheet = "Sheet1", range = cell_cols("A1:B8"))
+df_student_double_degree <- read_xlsx(path = "./data/dd-candidati.xlsx", sheet = "Sheet1", range = cell_cols("A:E"))
+df_locations_available <- read_xlsx(path = "./data/sedi ERASTU 23-24 - Scienze Economiche e Aziendali-1.xlsx", 
+                 sheet = "vereinbarungen", range = cell_cols("A:P"))
+df_student_personal <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx",
+                 sheet = "Dati personali e carriera", range = cell_cols("A:N"))
+df_student_destinations <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx",
+                               sheet = "Destinazioni", range = cell_cols("A:V"))
+df_student_language <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx",
+                                     sheet = "Competenze linguistiche", range = cell_cols("A:H")) 
+```
+
+***
+
+File: **tabella_conversione-ISCED_CODE.xlsx**
+
+Nome variabili: **`r colnames(df_isced)`**
+
+***
+
+File: **Double Degreee candidati.xlsx**
+
+Nome variabili: **`r colnames(df_student_double_degree)`**
+
+***
+
+File: **sedi ERASTU 23-24 - Scienze Economiche e Aziendali-1.xlsx**
+
+Nome variabili: **`r colnames(df_locations_available)`**
+
+***
+
+File: **selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx**
+
+Nome variabili (foglio Dati personali e carriera): **`r colnames(df_student_personal)`**
+
+Nome variabili (foglio Destinazioni): **`r colnames(df_student_destinations)`**
+
+Nome variabili (foglio Competenze linguistiche): **`r colnames(df_student_language)`**
+
+***
+
+## Issue 2 - Incogruenze nei valori delle variabili
+A meno che non ci siano ragioni specifiche, e' fondamentale evitare valori diversi in variabili che hanno lo stesso significato. I seguenti casi vanno corretti (o discussi se incorreggibili).
+
+### Lingua
+```{r}
+lang <- df_locations_available %>% select(`LINGUA DI ISTRUZIONE 1`) %>% distinct()
+ling <- df_student_language %>% select(`LINGUA`) %>% distinct()
+```
+
+I valori della lingua nel file **sedi ERASTU 23-24 - Scienze Economiche e Aziendali-1.xlsx** sono: `r lang`
+
+I valori della lingua nel file **selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx** sono: `r ling`
+
+### Livello di studio
+```{r}
+lev <- df_locations_available %>% select(`LIVELLI DI STUDIO AMMISSIBILI`) %>% distinct()
+liv <- df_student_personal %>% select(`TIPO CORSO DI STUDI`) %>% distinct()
+```
+
+I valori della lingua nel file **sedi ERASTU 23-24 - Scienze Economiche e Aziendali-1.xlsx** sono: `r lev`
+
+I valori della lingua nel file **selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx** sono: `r liv`
+
+## Issue 3 - Mappatura delle variabili tra i diversi file
+Bisogna fare in modo di avere le variabili necessarie per collegare facilmente i vari file di input senza dover ricalcolare valori o ripulire i valori in input
+
+### ISCED mapping
+```{r}
+corsi <- df_student_personal %>% select(`CORSO DI STUDI`) %>% distinct()
+i <- df_isced %>% select(`isced`) %>% distinct()
+```
+Il valore dell ISCED deve essere mappa to con precisione assoluta ai nomi dei corsi di studio che sono effettivamente presenti nel file degli studenti che hanno presentato applicazione. Questi sono i corsi di studio presenti al momento: `r corsi`
+
+E' inoltre importante decidere quale sia il formato degli ISCED. Per ora abbiamo il trattino come separatore. Per me va bene, ma non deve cambiare in future. Questi sono i formati al momento: `r i`
+
+NB: Il formato 000-000 l'ho aggiunto io causa incongruenza con alcuni nomi dei corsi. Non servira una volta messo a posti il problema di cui sopra.
+
+### Double Degree mapping
+```{r}
+na <- df_locations_available %>% select(`NOME DELL'ACCORDO`) %>% distinct()
+```
+Il file con la lista degli studenti che hanno fatto domanda di Double Degree deve permettere una facile mappatura ai programmi erasmus. Ogni studente, oltre al codice erasmus, deve anche avere un valore mappabile al "nome accordo" nel file delle sedi e dei candidati. Per referenza questa e' la lista dei valori contenuti nel nome accordo del file **sedi ERASTU 23-24 - Scienze Economiche e Aziendali-1.xlsx**: `r na`
+
+Non e' necessario usare il valore "no admitted," basta lasciare bianco il valore della location e nome accordo. Se c'e' un motivo per cui serve specificare "no admitted" fatemelo sapere. 
+
+## Issue 4 - Completezza delle variabili tra i diversi file
+```{r}
+i <- df_locations_available %>% select(`ISCED`) %>% distinct()
+```
+Come ho gia detto, ci sono ridondanze e variabili che sembrano inutile. Per esempio, nel file **selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx** vengono riportati i posti disponibili nelle destinazioni scelte dagli studenti. Tale valore e' ridondante con il file **sedi ERASTU 23-24 - Scienze Economiche e Aziendali-1.xlsx** dove tale valore dovrebbe risiedere concettualmente. Quindi, a meno mi sfugga una motivazione valida, questo tipo di ridondanza andrebbe eliminata. 
+
+Di converso, il file **sedi ERASTU 23-24 - Scienze Economiche e Aziendali-1.xlsx** dal quale estraggo l'insieme delle destinazioni e dei programmi assegnabili, non ha una variabile che raccoglie il codice erasmus della location. Sarebbe utile averlo come valore atomico (oltre che come componente del nome accordo). 
+
+Stesso discorso per il codice ISCED. Appare in una colonna chiamata ISCED, ma non e' un valore atomico. A meno che non abbia capito male, l'ISCED e' un valore numerico. Questi sono i valori di quella colonna: `r i`
+
+

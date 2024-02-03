@@ -26,6 +26,7 @@ df_locations_validated <-
 df_student_ranked <- 
   df_locations_validated %>%
   select(cognome:matricola, punteggio_normalizzato_a_100, bonus:discrezionale) %>% 
+#  mutate(matricola = as.integer(matricola)) %>% 
   mutate(punteggio_totale = punteggio_normalizzato_a_100 + bonus + discrezionale) %>% 
   arrange(desc(punteggio_totale)) %>% 
   distinct() %>% 
