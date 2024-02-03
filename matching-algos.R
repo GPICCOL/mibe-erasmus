@@ -22,14 +22,16 @@ df_locations_validated <-
 
 ### Data preparation for the matching algo
 ### First rank students and make a ranked students vector to use later
+### Students are first ranked by total points, ties go to the lowest matricola (seniority rule)
 # ranked_students <-c(512786, 518361, 512799, 512787, 515499) ## Used for testing a subset
 df_student_ranked <- 
   df_locations_validated %>%
   select(cognome:matricola, punteggio_normalizzato_a_100, bonus:discrezionale) %>% 
-#  mutate(matricola = as.integer(matricola)) %>% 
+  mutate(matricola = as.integer(matricola)) %>% 
   mutate(punteggio_totale = punteggio_normalizzato_a_100 + bonus + discrezionale) %>% 
-  arrange(desc(punteggio_totale)) %>% 
+  arrange(desc(punteggio_totale), matricola) %>% 
   distinct() %>% 
+  mutate(matricola = as.character(matricola)) %>% 
   mutate(posizione_graduatoria = row_number())
   
 ranked_students <- 
@@ -94,10 +96,10 @@ df_locations_remaining <-
 
 ### Output Generation Call
 # Remove unnecessary objects
-objects_to_keep <- c("df_locations_validated_all", "df_dd_assignment_notes", "df_locations_remaining", "df_assignment")
+objects_to_keep <- c("df_locations_validated_all", "df_dd_assignment_notes", "df_locations_remaining", "df_assignment", "df_student_personal", "df_locations_available")
 all_objects <- ls()
 rm(list = setdiff(all_objects, objects_to_keep))
 rm(all_objects)
 
-#source("output_generation.R")
+source("output_generation.R")
 

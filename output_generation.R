@@ -3,14 +3,6 @@ library(writexl)
 
 source("function_definitions.R")
 
-# Read needed data objects
-df_student_personal %>% glimpse()
-df_assignment %>% glimpse()
-df_locations_validated %>% glimpse()
-df_locations_available %>% glimpse()
-df_locations_remaining %>% glimpse() 
-
-
 # Creation of transitory data frames
 x <- 
   df_locations_available %>% 
@@ -27,7 +19,7 @@ df_esito_selezioni <-
 # Write output files
 ## Assigned locations file
 ## Remaining locations file for those that have not been completely filled out
-## File with all notes on why studnets did not get assigned a location
+## File with all notes on why students did not get assigned a location
 ## File with DD students and a comment "not on Erasmus list"
 ##
 df_locations_remaining %>% glimpse()

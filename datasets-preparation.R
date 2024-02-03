@@ -188,7 +188,7 @@ df_locations_validated_all <-
 
 ### Matching Algorithm Call
 # Remove unnecessary objects
-objects_to_keep <- c("df_locations_validated_all", "df_dd_assignment_notes", "df_locations_available_clean", "df_locations_available")
+objects_to_keep <- c("df_locations_validated_all", "df_dd_assignment_notes", "df_locations_available_clean", "df_locations_available", "df_student_personal", "df_locations_available")
 all_objects <- ls()
 rm(list = setdiff(all_objects, objects_to_keep))
 rm(all_objects)
