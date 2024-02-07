@@ -167,7 +167,7 @@ d <-
   mutate(level_requirement = if_else(str_detect(livelli_di_studio_corrected, tipo_corso_di_studi), "Level requirement met successfully", "Level requirement not met")) %>% 
   mutate(isced_clean = str_sub(isced, -4)) %>% 
   mutate(isced_requirement = if_else(str_detect(isced_tabella_conversione, isced_clean), "ISCED requirement met successfully", "ISCED requirement not met")) %>% 
-  mutate(isced_requirement = if_else(anno_di_corso == 3, "ISCED requirement met successfully becasue student in third year", isced_requirement)) %>% 
+  mutate(isced_requirement = if_else(anno_di_corso == 3, "ISCED requirement met successfully because student in third year", isced_requirement)) %>% 
   select(matricola, nomeaccordo, level_requirement, isced_requirement)
   
 
