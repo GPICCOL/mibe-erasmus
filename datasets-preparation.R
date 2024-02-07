@@ -178,7 +178,7 @@ d <-
 ### This file is needed in case students want to know why they did not qualify for a specific location of their choice
 df_locations_validated_all <- 
   df_locations_complete %>% 
-  mutate(bonus = if_else(matricola %in% dd_students_admitted, 50, 25)) %>% 
+  mutate(punteggio_motivazione = if_else(matricola %in% dd_students_admitted, 50, 25)) %>% 
   mutate(discrezionale = 0) %>% 
   left_join(., l, by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
   mutate(language_requirement = replace(language_requirement, is.na(language_requirement), "Language requirement not met")) %>% 

@@ -12,15 +12,23 @@ x <-
 
 # Create df_esito_selezioni
 df_esito_selezioni <- 
-  df_student_personal %>% 
-  select(cognome, nome, matricola, corso_di_studi, tipo_corso_di_studi, punteggio_normalizzato_a_100) %>% 
-  left_join(., x, by = join_by(matricola), keep = FALSE, )
+  df_student_personal_for_output %>% 
+  select(cognome, nome, matricola, corso_di_studi, tipo_corso_di_studi, punteggio_normalizzato_a_100, 
+         punteggio_motivazione, discrezionale, punteggio_totale) %>% 
+  left_join(., x, by = join_by(matricola), keep = FALSE)
 
 # Write output files
-## Assigned locations file
+## Assigned locations file - Esiti worksheet
+## File with all notes on why students did not get assigned a location - Note worksheet
+x <- df_locations_validated_all %>% 
+  select(cognome, nome, matricola, sede_ospitante, nome_accordo, language_requirement:isced_requirement)
+worksheets <- list(esiti = df_esito_selezioni, note = x)
+write_xlsx(worksheets, path = "output/esito_selezioni.xlsx", )
+
 ## Remaining locations file for those that have not been completely filled out
-## File with all notes on why students did not get assigned a location
-## File with DD students and a comment "not on Erasmus list"
+write_xlsx(df_locations_remaining, path = "output/locations_availability.xlsx")
+
+
 ##
 df_locations_remaining %>% glimpse()
 df_locations_remaining %>% View()
@@ -28,6 +36,10 @@ df_esito_selezioni %>% glimpse()
 df_esito_selezioni %>% View()
 df_locations_validated_all %>% glimpse()
 df_dd_assignment_notes %>% glimpse()
+
+
+
+
 
 # COGNOME	NOME	MATRICOLA	CORSO DI STUDI	TIPO CORSO DI STUDI	
 # PUNTEGGIO NORMALIZZATO A 100	PUNTEGGIO MOTIVAZIONE (max 50 punti)	
