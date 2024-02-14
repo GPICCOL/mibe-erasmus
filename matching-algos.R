@@ -100,7 +100,9 @@ df_locations_remaining <-
 
 ### Output Generation Call
 # Remove unnecessary objects
-objects_to_keep <- c("df_locations_validated_all", "df_dd_assignment_notes", "df_locations_remaining", "df_assignment", "df_student_personal_for_output", "df_locations_available")
+objects_to_keep <- c("df_locations_validated_all", "df_dd_assignment_notes", "df_locations_remaining", 
+                     "df_assignment", "df_student_personal_for_output", "df_locations_available",
+                     "df_dd_assignment_notes")
 all_objects <- ls()
 rm(list = setdiff(all_objects, objects_to_keep))
 rm(all_objects)

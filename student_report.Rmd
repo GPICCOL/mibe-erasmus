@@ -1,0 +1,57 @@
+---
+title: "Commissione Erasmus - Assegnazione Destinazioni Erasmus 2024"
+subtitle: "Individual Student Report"
+author: "Gabriele Piccoli"
+date: "`r Sys.Date()`"
+output: pdf_document
+params:
+  p_student: "00000"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+```{r }
+library(tidyverse)
+library(readxl)
+library(stringr)
+
+# Read the Excel output files
+df_esiti <- read_xlsx(path = "./output/esito_selezioni.xlsx",
+                                 sheet = "esiti", range = cell_cols("A:O"))
+df_note <- read_xlsx(path = "./output/esito_selezioni.xlsx",
+                                 sheet = "note", range = cell_cols("A:I"))
+df_not_ranked <- read_xlsx(path = "./output/esito_selezioni.xlsx",
+                                 sheet = "students not ranked", range = cell_cols("A:I"))
+
+ma <- params$p_student
+
+cognome <- df_esiti %>%
+  filter(matricola == ma) %>%
+  select(cognome) %>% pull() %>% 
+  str_to_title(cognome)
+
+nome <- df_esiti %>%
+  filter(matricola == ma) %>%
+  select(nome) %>% pull() %>% 
+  str_to_title(nome)
+
+```
+
+## Introduzione
+Questo report si riferisce allo studente **`r cognome`**, **`r nome`**, matricola: **`r ma`**. Il report contiene tutte le informazioni rilevanti riguardo all'assegnazione dello studente alla destinazione. 
+
+Per ogni destinazione scelat dallo studente, la tabella qui sotto riporta i risultati delle verifiche di eleggibilità:
+
+```{r}
+tbl <- 
+  df_note %>% filter(matricola == ma) %>%
+  select(sede_ospitante, language_requirement, level_requirement, isced_requirement)
+knitr::kable(tbl, caption = "Elegibility checks")
+
+```
+

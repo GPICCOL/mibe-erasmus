@@ -21,30 +21,32 @@ df_esito_selezioni <-
 ## Assigned locations file - Esiti worksheet
 ## File with all notes on why students did not get assigned a location - Note worksheet
 x <- df_locations_validated_all %>% 
-  select(cognome, nome, matricola, sede_ospitante, nome_accordo, language_requirement:isced_requirement)
+  select(cognome, nome, matricola, sede_ospitante, nome_accordo, language_requirement:double_degree_notes)
 worksheets <- list(esiti = df_esito_selezioni, note = x)
+
+## Add a sheet for students who did not enter the ranking for any reason, with notes about them
+nr <- df_esito_selezioni %>% 
+  filter(is.na(posizione_graduatoria) | posizione_graduatoria == "") %>% 
+  select(matricola) %>% 
+  pull()
+x <- df_locations_validated_all %>% 
+  select(cognome, nome, matricola, sede_ospitante, nome_accordo, language_requirement:double_degree_notes) %>% 
+  filter(matricola %in% nr)
+
+worksheets <- list_modify(worksheets, `students not ranked` = x)
+
+## Write file with esiti, note and list of non-ranked students
 write_xlsx(worksheets, path = "output/esito_selezioni.xlsx", )
 
 ## Remaining locations file for those that have not been completely filled out
 write_xlsx(df_locations_remaining, path = "output/locations_availability.xlsx")
 
+## Notes about double degree students
+write_xlsx(df_dd_assignment_notes, path = "output/double_degree_notes.xlsx")
+
 
 ##
 df_locations_remaining %>% glimpse()
-df_locations_remaining %>% View()
 df_esito_selezioni %>% glimpse()
-df_esito_selezioni %>% View()
-df_locations_validated_all %>% glimpse()
-df_dd_assignment_notes %>% glimpse()
-
-
-
-
-
-# COGNOME	NOME	MATRICOLA	CORSO DI STUDI	TIPO CORSO DI STUDI	
-# PUNTEGGIO NORMALIZZATO A 100	PUNTEGGIO MOTIVAZIONE (max 50 punti)	
-# PUNTEGGIO TOTALE	
-# POSIZIONE GRADUATORIA	
-# Paese dell'istituzione scelta	Istituzione scelta	Codice Erasmus Istituzione	Nome dell'accordo	
-# NOTE
+x %>% glimpse()
 

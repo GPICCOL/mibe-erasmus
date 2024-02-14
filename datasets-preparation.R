@@ -102,7 +102,7 @@ df_dd_assignment_notes <-
   df_student_double_degree %>% 
   mutate(double_degree_notes = if_else(codice_erasmus_sedi %in% unique_erasmus_locations, 
                                        paste("Double Degree Student, Erasmus Location: ", codice_erasmus_sedi),
-                                       "Student assigned to location not in Erasmus list")) %>%
+                                       paste("Student assigned to location not in Erasmus list: ", codice_erasmus_sedi))) %>%
   mutate(double_degree_notes = if_else(codice_erasmus_sedi == "no admitted", "Student not admitted to Double Degree Program", double_degree_notes)) 
 
 dd_students_not_admitted <-
@@ -116,7 +116,7 @@ dd_students_admitted <-
   filter(str_starts(double_degree_notes, "Double Degree Student, Erasmus Location")) %>% 
   select(matricola) %>% 
   pull()
-  
+
 dd <- 
   df_dd_assignment_notes %>% 
   select(matricola, master, codice_erasmus_sedi, double_degree_notes) %>% 
@@ -129,6 +129,7 @@ dd <-
                                        "Student already assigned to different Double Degree destination",
                                        double_degree_notes)) %>% 
   select(matricola, nomeaccordo, double_degree_notes)
+  
 
 ### Validate Language Requirements and provide appropriate notes to df_locations_complete
 ### Create appropriate file with language mappings and scores on language levels
@@ -188,7 +189,9 @@ df_locations_validated_all <-
 
 ### Matching Algorithm Call
 # Remove unnecessary objects
-objects_to_keep <- c("df_locations_validated_all", "df_dd_assignment_notes", "df_locations_available_clean", "df_locations_available", "df_student_personal", "df_locations_available")
+objects_to_keep <- c("df_locations_validated_all", "df_dd_assignment_notes", "df_locations_available_clean", 
+                     "df_locations_available", "df_student_personal", "df_locations_available",
+                     "df_dd_assignment_notes")
 all_objects <- ls()
 rm(list = setdiff(all_objects, objects_to_keep))
 rm(all_objects)
