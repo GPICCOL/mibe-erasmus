@@ -10,22 +10,27 @@ filename <- df %>%
   mutate(fn = paste(cognome, nome, sep = "_")) %>% pull() %>% 
   tolower()
 
-students <- df %>% 
+matr <- df %>% 
   select(matricola) %>% pull()
 
-filename <- filename[1:3]
-students <- students[1:3]
+filename <- filename
+matr <- matr
 
 
 # Loop through students and render the R Markdown file
 i = 0
-for (s in students) {
+for (m in matr) {
   print(i)
+  
   i = i + 1
+  
+  print(filename[i])
+  print(m)
+  
   rmarkdown::render(
     input = "student_report.Rmd", 
     output_file = paste0("./reports/", filename[i], ".pdf"),
-    params = list(p_student = s)
+    params = list(p_student_number = m)
   )
 }
 
