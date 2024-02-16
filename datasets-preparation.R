@@ -14,7 +14,7 @@ source("function_definitions.R")
 df_isced <- read_xlsx(path = "./data/tabella_conversione-ISCED_CODE.xlsx", sheet = "Sheet1", range = cell_cols("A1:B8")) %>% 
   rename(isced_tabella_conversione = isced)
   
-# List of students who have won the double degree assignment
+# List of students who have asked for a double degree assignment
 df_student_double_degree <- read_xlsx(path = "./data/dd-candidati.xlsx", sheet = "Sheet1", range = cell_cols("A:E")) %>% 
   rename(matricola = MATRICOLA, cognome = Last_Name, nome = First_Name, 
          master = Master, codice_erasmus_sedi = CODICE_ERASMUS_SEDI) %>% 
@@ -32,7 +32,7 @@ df_locations_available <- read_xlsx(path = "./data/sedi ERASTU 23-24 - Scienze E
   certificazione_linguistica = `CERTIFICAZIONE LINGUISTICA`, 
   scadenza_urgente = `EVENTUALE SCADENZA APPLICATION URGENTE 1° SEMESTRE`)
 
-# List of participating students and their personal date
+# List of participating students and their personal data
 df_student_personal <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx",
                  sheet = "Dati personali e carriera", range = cell_cols("A:N")) %>% 
   rename(cognome = COGNOME, nome = NOME, matricola = MATRICOLA, email_di_ateneo = `EMAIL DI ATENEO`, 
@@ -111,7 +111,13 @@ dd_students_not_admitted <-
   select(matricola) %>% 
   pull()
 
-dd_students_admitted <-
+dd_students_assigned_non_erasmus <-
+  df_dd_assignment_notes %>% 
+  filter(str_starts(double_degree_notes, "Student assigned to location not in Erasmus lis")) %>% 
+  select(matricola) %>% 
+  pull()
+
+dd_students_assigned <-
   df_dd_assignment_notes %>% 
   filter(str_starts(double_degree_notes, "Double Degree Student, Erasmus Location")) %>% 
   select(matricola) %>% 
@@ -125,11 +131,25 @@ dd <-
   mutate(double_degree_notes = if_else(is.na(double_degree_notes) & matricola %in% dd_students_not_admitted, 
                                        "Double Degree student not admitted to double degree",
                                        double_degree_notes)) %>% 
-  mutate(double_degree_notes = if_else(is.na(double_degree_notes) & matricola %in% dd_students_admitted, 
+  mutate(double_degree_notes = if_else(is.na(double_degree_notes) & matricola %in% dd_students_assigned, 
                                        "Student already assigned to different Double Degree destination",
                                        double_degree_notes)) %>% 
   select(matricola, nomeaccordo, double_degree_notes)
-  
+
+### Augment the student personal data with ranking and a note about selected
+### programs: Double Degree Only, Erasmus Only or Double Degree and Erasmus
+df_student_personal <- 
+  df_student_personal %>% 
+  mutate(matricola = as.integer(matricola)) %>% 
+  mutate(punteggio_motivazione = if_else(matricola %in% dd_students_assigned, 50, 25)) %>% 
+  mutate(discrezionale = 0) %>% 
+  mutate(punteggio_totale = punteggio_normalizzato_a_100 + punteggio_motivazione + discrezionale) %>% 
+  arrange(desc(punteggio_totale), matricola) %>% 
+  distinct() %>% 
+  mutate(matricola = as.character(matricola)) %>% 
+  mutate(posizione_graduatoria = row_number()) %>% 
+  mutate(tipologia_assegnazione = if_else(matricola %in% setdiff(df_student_double_degree$matricola, dd_students_not_admitted), 
+                                          "Double Degree and Erasmus", "Erasmus Only"))
 
 ### Validate Language Requirements and provide appropriate notes to df_locations_complete
 ### Create appropriate file with language mappings and scores on language levels
@@ -179,7 +199,7 @@ d <-
 ### This file is needed in case students want to know why they did not qualify for a specific location of their choice
 df_locations_validated_all <- 
   df_locations_complete %>% 
-  mutate(punteggio_motivazione = if_else(matricola %in% dd_students_admitted, 50, 25)) %>% 
+  mutate(punteggio_motivazione = if_else(matricola %in% dd_students_assigned, 50, 25)) %>% 
   mutate(discrezionale = 0) %>% 
   left_join(., l, by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
   mutate(language_requirement = replace(language_requirement, is.na(language_requirement), "Language requirement not met")) %>% 
@@ -191,7 +211,7 @@ df_locations_validated_all <-
 # Remove unnecessary objects
 objects_to_keep <- c("df_locations_validated_all", "df_dd_assignment_notes", "df_locations_available_clean", 
                      "df_locations_available", "df_student_personal", "df_locations_available",
-                     "df_dd_assignment_notes")
+                     "df_dd_assignment_notes", "dd_students_assigned_non_erasmus")
 all_objects <- ls()
 rm(list = setdiff(all_objects, objects_to_keep))
 rm(all_objects)

@@ -24,20 +24,21 @@ df_locations_validated <-
 ### First rank students and make a ranked students vector to use later
 ### Students are first ranked by total points, ties go to the lowest matricola (seniority rule)
 # ranked_students <-c(512786, 518361, 512799, 512787, 515499) ## Used for testing a subset
-df_student_ranked <- 
-  df_locations_validated %>%
-  select(cognome:matricola, punteggio_normalizzato_a_100, punteggio_motivazione:discrezionale) %>% 
-  mutate(matricola = as.integer(matricola)) %>% 
-  mutate(punteggio_totale = punteggio_normalizzato_a_100 + punteggio_motivazione + discrezionale) %>% 
-  arrange(desc(punteggio_totale), matricola) %>% 
-  distinct() %>% 
-  mutate(matricola = as.character(matricola)) %>% 
-  mutate(posizione_graduatoria = row_number())
+# df_student_ranked <- 
+#   df_locations_validated %>%
+#   select(cognome:matricola, punteggio_normalizzato_a_100, punteggio_motivazione:discrezionale) %>% 
+#   mutate(matricola = as.integer(matricola)) %>% 
+#   mutate(punteggio_totale = punteggio_normalizzato_a_100 + punteggio_motivazione + discrezionale) %>% 
+#   arrange(desc(punteggio_totale), matricola) %>% 
+#   distinct() %>% 
+#   mutate(matricola = as.character(matricola)) %>% 
+#   mutate(posizione_graduatoria = row_number())
   
 ranked_students <- 
-  df_student_ranked %>% 
+  df_student_personal %>% 
   select(matricola) %>% 
-  pull() %>% 
+  pull() %>%
+  setdiff(., dd_students_assigned_non_erasmus) %>% 
   as.numeric()
 
 df_student_choices <- 
@@ -81,17 +82,25 @@ for (m in ranked_students) {
 }
 
 # Creation of dataframes to pass for output
-df_student_personal_for_output <- df_student_ranked %>% 
-  select(matricola, punteggio_motivazione, discrezionale, punteggio_totale, posizione_graduatoria) %>% 
-  left_join(df_student_personal, ., by = join_by(matricola), keep = FALSE)
-  
-df_assignment <- df_assignment %>%
-  mutate(matricola = as.character(matricola))
+x <- df_dd_assignment_notes %>% 
+  select(matricola, double_degree_notes) %>% 
+  filter(matricola %in% dd_students_assigned_non_erasmus) %>% 
+  rename(assigned_locations = double_degree_notes)
 
-df_assignment <- 
-  df_student_ranked %>% 
-  select(matricola, posizione_graduatoria) %>% 
-  left_join(., df_assignment, by = join_by(matricola), keep = FALSE)
+df_assignment <- df_assignment %>%
+  mutate(matricola = as.character(matricola)) %>% 
+  bind_rows(. , x)
+
+
+# df_assignment <- 
+#   df_student_ranked %>% 
+#   select(matricola, posizione_graduatoria) %>% 
+#   left_join(., df_assignment, by = join_by(matricola), keep = FALSE)
+
+df_student_personal_for_output <- df_student_personal
+  # df_student_ranked %>% 
+  # select(matricola, punteggio_motivazione, discrezionale, punteggio_totale, posizione_graduatoria) %>% 
+  # left_join(df_student_personal, ., by = join_by(matricola), keep = FALSE)
 
 df_locations_remaining <- 
   df_locations_available %>% 

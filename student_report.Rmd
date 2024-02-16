@@ -22,13 +22,15 @@ library(stringr)
 
 # Read the Excel output files
 df_esiti <- read_xlsx(path = "./output/esito_selezioni.xlsx",
-                                 sheet = "esiti", range = cell_cols("A:O"))
+                                 sheet = "esiti", range = cell_cols("A:R"))
 df_note <- read_xlsx(path = "./output/esito_selezioni.xlsx",
-                                 sheet = "note", range = cell_cols("A:I"))
+                                 sheet = "note", range = cell_cols("A:K"))
 df_not_ranked <- read_xlsx(path = "./output/esito_selezioni.xlsx",
                                  sheet = "students not ranked", range = cell_cols("A:I"))
 
 ma <- params$p_student_number
+ma <- "512786"
+ma <- "512745"
 
 cognome <- df_esiti %>%
   filter(matricola == ma) %>%
@@ -42,25 +44,42 @@ nome <- df_esiti %>%
 
 corso <- df_esiti %>%
   filter(matricola == ma) %>%
-  select(corso_di_studi) %>% pull() %>%
-  str_to_title()
+  select(corso_di_studi) %>% pull()
 
 tipo <- df_esiti %>%
   filter(matricola == ma) %>%
-  select(tipo_corso_di_studi) %>% pull() %>% 
-  str_to_title()
+  select(tipo_corso_di_studi) %>% pull()
+
+domanda <- df_esiti %>%
+  filter(matricola == ma) %>%
+  select(tipologia_assegnazione) %>% pull()
 
 ```
 
 ## Introduzione
-Questo report si riferisce allo studente **`r cognome`**, **`r nome`**, matricola: **`r ma`**, iscritto al corso di studi in **`r corso`**, tipologia: **`r tipo`**.
+Questo report si riferisce a **`r cognome`**, **`r nome`**, 
+
+matricola: **`r ma`**, 
+
+corso di studi in **`r corso`**, 
+
+tipologia: **`r tipo`**. 
+
+Lo studente ha richiesto la seguente tipologia di assegnazione: **`r domanda`**.
 
 
 ```{r}
+
+cond <- 
+  df_esiti %>% 
+  filter(matricola == ma) %>%
+  select(assigned_locations) %>% 
+  pull() %>% 
+  str_starts("Student assigned to location not in Erasmus lis")
+
 uni <- df_esiti %>%
   filter(matricola == ma) %>%
-  select(sede_ospitante) %>% pull() %>% 
-  str_to_title()
+  select(sede_ospitante) %>% pull()
 
 nazione <- df_esiti %>%
   filter(matricola == ma) %>%
@@ -69,13 +88,27 @@ nazione <- df_esiti %>%
 
 accordo <- df_esiti %>%
   filter(matricola == ma) %>%
-  select(nome_accordo) %>% pull() %>% 
-  str_to_title()
+  select(nome_accordo) %>% pull()
 
+if (cond) {
+  uni <- df_esiti %>%
+    filter(matricola == ma) %>%
+    select(assigned_locations) %>% 
+    pull() %>% 
+    str_split(": ", n = 2) %>% 
+    map_chr(2) %>% 
+    trimws()
+  
+  nazione <- "In quanto studente assegnato a destinazione Double Degree non Erasmus"
+  
+  accordo <- "Non disponibile"
+}
 
 ```
 
-Lo studente è stato assegnato alla destinazione: **`r uni`**, **`r nazione`**, nel quadro del seguente accordo: **`r accordo`**.
+L'assegnazione é per la destinazione: **`r uni`**, **`r nazione`**, 
+
+nel quadro dell'accordo: **`r accordo`**.
 
 Il report contiene a seguito tutte le informazioni rilevanti riguardo all'assegnazione dello studente alla destinazione. 
 
@@ -87,7 +120,7 @@ rank <- df_esiti %>%
   str_to_title()
 ```
 
-Lo studente si è piazzato al numero **`r rank`** della graduatoria, in virtú dei punteggi sotto riportati.
+In virtú dei punteggi sotto riportati, la posizione della graduatoria ottenuta é: **`r rank`**.
 
 
 ```{r}
@@ -99,13 +132,15 @@ knitr::kable(tbl, caption = "Punteggi")
 
 ```
 
+
+\newpage
 ## Note
-Per ogni destinazione scelta dallo studente, la tabella qui sotto riporta i risultati delle verifiche di eleggibilità:
+Per ogni destinazione scelta, la tabella qui sotto riporta i risultati delle verifiche di eleggibilità:
 
 ```{r}
 tbl <- 
   df_note %>% filter(matricola == ma) %>%
-  select(sede_ospitante, language_requirement, level_requirement, isced_requirement)
+  select(choice_number, sede_ospitante, language_requirement, level_requirement, isced_requirement)
 knitr::kable(tbl, caption = "Elegibility checks")
 
 ```

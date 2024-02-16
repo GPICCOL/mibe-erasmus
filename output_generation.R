@@ -14,14 +14,14 @@ x <-
 df_esito_selezioni <- 
   df_student_personal_for_output %>% 
   select(cognome, nome, matricola, corso_di_studi, tipo_corso_di_studi, punteggio_normalizzato_a_100, 
-         punteggio_motivazione, discrezionale, punteggio_totale) %>% 
+         punteggio_motivazione, discrezionale, punteggio_totale, posizione_graduatoria, tipologia_assegnazione) %>% 
   left_join(., x, by = join_by(matricola), keep = FALSE)
 
 # Write output files
 ## Assigned locations file - Esiti worksheet
 ## File with all notes on why students did not get assigned a location - Note worksheet
 x <- df_locations_validated_all %>% 
-  select(cognome, nome, matricola, sede_ospitante, nome_accordo, language_requirement:double_degree_notes)
+  select(cognome, nome, matricola, choice_number, sede_ospitante, nome_accordo, language_requirement:double_degree_notes)
 worksheets <- list(esiti = df_esito_selezioni, note = x)
 
 ## Add a sheet for students who did not enter the ranking for any reason, with notes about them
@@ -44,9 +44,9 @@ write_xlsx(df_locations_remaining, path = "output/locations_availability.xlsx")
 ## Notes about double degree students
 write_xlsx(df_dd_assignment_notes, path = "output/double_degree_notes.xlsx")
 
-
+print("All done, no errors")
 ##
-df_locations_remaining %>% glimpse()
-df_esito_selezioni %>% glimpse()
-x %>% glimpse()
+# df_locations_remaining %>% glimpse()
+# df_esito_selezioni %>% glimpse()
+# x %>% glimpse()
 
