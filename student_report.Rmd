@@ -29,8 +29,8 @@ df_not_ranked <- read_xlsx(path = "./output/esito_selezioni.xlsx",
                                  sheet = "students not ranked", range = cell_cols("A:I"))
 
 ma <- params$p_student_number
-ma <- "512786"
-ma <- "512745"
+# ma <- "512786"
+# ma <- "512745"
 
 cognome <- df_esiti %>%
   filter(matricola == ma) %>%
@@ -69,14 +69,6 @@ Lo studente ha richiesto la seguente tipologia di assegnazione: **`r domanda`**.
 
 
 ```{r}
-
-cond <- 
-  df_esiti %>% 
-  filter(matricola == ma) %>%
-  select(assigned_locations) %>% 
-  pull() %>% 
-  str_starts("Student assigned to location not in Erasmus lis")
-
 uni <- df_esiti %>%
   filter(matricola == ma) %>%
   select(sede_ospitante) %>% pull()
@@ -89,6 +81,13 @@ nazione <- df_esiti %>%
 accordo <- df_esiti %>%
   filter(matricola == ma) %>%
   select(nome_accordo) %>% pull()
+
+cond <- 
+  df_esiti %>% 
+  filter(matricola == ma) %>%
+  select(assigned_locations) %>% 
+  pull() %>% 
+  str_starts("Student assigned to location not in Erasmus lis")
 
 if (cond) {
   uni <- df_esiti %>%
@@ -104,9 +103,24 @@ if (cond) {
   accordo <- "Non disponibile"
 }
 
+cond <- 
+  df_esiti %>% 
+  filter(matricola == ma) %>%
+  select(assigned_locations) %>% 
+  pull() %>% 
+  str_starts("All valid choices were taken - no assignment")
+
+if (cond) {
+  uni <- "Nessuna assegnazione possibile"
+  
+  nazione <- "tutte le destinazioni erano esaurite al momento dell'assegnazione"
+  
+  accordo <- "Non disponibile"
+}
+
 ```
 
-L'assegnazione é per la destinazione: **`r uni`**, **`r nazione`**, 
+L'assegnazione é per la destinazione: **`r uni`**, **`r nazione`**.
 
 nel quadro dell'accordo: **`r accordo`**.
 
