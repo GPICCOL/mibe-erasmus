@@ -15,25 +15,25 @@ df_isced <- read_xlsx(path = "./data/tabella_conversione-ISCED_CODE.xlsx", sheet
   rename(isced_tabella_conversione = isced)
   
 # List of students who have asked for a double degree assignment
-df_student_double_degree <- read_xlsx(path = "./data/dd-candidati.xlsx", sheet = "Sheet1", range = cell_cols("A:E")) %>% 
+df_student_double_degree <- read_xlsx(path = "./data/dd_candidati2024.xlsx", sheet = "sheet", range = cell_cols("A:F")) %>% 
   rename(matricola = MATRICOLA, cognome = Last_Name, nome = First_Name, 
-         master = Master, codice_erasmus_sedi = CODICE_ERASMUS_SEDI) %>% 
+         master = Master, codice_erasmus_sedi = CODICE_ERASMUS_SEDI, nome_accordo = MESI) %>% 
   mutate(matricola = as.character(matricola))
 
 # List of available locations and their characteristics
-df_locations_available <- read_xlsx(path = "./data/sedi ERASTU 23-24 - Scienze Economiche e Aziendali-1.xlsx", 
-                 sheet = "vereinbarungen", range = cell_cols("A:P")) %>% 
+df_locations_available <- read_xlsx(path = "./data/sedi ERASTU 2024-25 - Scienze Economiche e Aziendali.xlsx", 
+                 sheet = "Foglio1", range = cell_cols("A:P")) %>% 
   rename(area_erasmus = `AREA DI STUDI ERASMUS`, nome_accordo = `NOME DELL'ACCORDO`,
   sede_ospitante = `SEDE OSPITANTE (codice Erasmus e nome)`, paese = PAESE, isced = ISCED,
   n_posti = `N. POSTI`, durata = `DURATA INDICATIVA PERIODO (mesi)`,
   livelli_di_studio = `LIVELLI DI STUDIO AMMISSIBILI`, corsi_di_studio = `CORSI DI STUDIO AMMISSIBILI`,
   note = NOTE, lingua_1 = `LINGUA DI ISTRUZIONE 1`, livello_lingua_1 = `LIVELLO LINGUA DI ISTRUZIONE 1`,
-  lingua_2 = `LINGUA DI ISTRUZIONE 2`, livello_lingua_2 = `LIVELLO LINGUA DI ISTRUZIONE 2`,
-  certificazione_linguistica = `CERTIFICAZIONE LINGUISTICA`, 
-  scadenza_urgente = `EVENTUALE SCADENZA APPLICATION URGENTE 1° SEMESTRE`)
+  lingua_2 = `LINGUA DI ISTRUZIONE 2`, livello_lingua_2 = `LIVELLO LINGUA DI ISTRUZIONE 2`)
+  # certificazione_linguistica = `CERTIFICAZIONE LINGUISTICA`, 
+  # scadenza_urgente = `EVENTUALE SCADENZA APPLICATION URGENTE 1° SEMESTRE`)
 
 # List of participating students and their personal data
-df_student_personal <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx",
+df_student_personal <- read_xlsx(path = "./data/selezioni_erastudio_24-25-scienze_economiche_e_aziendali.xlsx",
                  sheet = "Dati personali e carriera", range = cell_cols("A:N")) %>% 
   rename(cognome = COGNOME, nome = NOME, matricola = MATRICOLA, email_di_ateneo = `EMAIL DI ATENEO`, 
          corso_di_studi = `CORSO DI STUDI`, tipo_corso_di_studi = `TIPO CORSO DI STUDI`, 
@@ -43,7 +43,7 @@ df_student_personal <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIE
          punteggio_normalizzato_a_100 = `PUNTEGGIO NORMALIZZATO A 100`, note_personal = NOTE)
 
 # List of students destination selection
-df_student_destinations <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx",
+df_student_destinations <- read_xlsx(path = "./data/selezioni_erastudio_24-25-scienze_economiche_e_aziendali.xlsx",
                                sheet = "Destinazioni", range = cell_cols("A:V")) %>% 
   rename(cognome = COGNOME, nome = NOME, matricola = MATRICOLA, corso_di_studi = `CORSO DI STUDI`, 
          paese_1 = `Paese dell'istituzione scelta (1)`, istituzione_1 = `Istituzione scelta (1)`, 
@@ -57,7 +57,7 @@ df_student_destinations <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - 
          numeroposti_3 = `Numero di posti per l'accordo (3)`, numeromesi_3 = `Numero di mesi (3)`)
 
 # List of students language competence
-df_student_language <- read_xlsx(path = "./data/selezioni ERASTUDIO 23-24 - SCIENZE ECONOMICHE E AZIENDALI.xlsx",
+df_student_language <- read_xlsx(path = "./data/selezioni_erastudio_24-25-scienze_economiche_e_aziendali.xlsx",
                                      sheet = "Competenze linguistiche", range = cell_cols("A:H")) %>% 
   rename(cognome = COGNOME, nome = NOME, matricola = MATRICOLA, corso_studi = `CORSO DI STUDI`, 
          tipo_corso_studi = `TIPO CORSO DI STUDI`, lingua = LINGUA, livello = LIVELLO, note_lingua = NOTE) %>% 
@@ -90,20 +90,36 @@ df_locations_complete <- left_join(df_student_destination_clean, df_locations_av
 ### To eliminate the destinations that are not congruent with the assigned double degree destination
 ### and produce appropriate messages
 ### Generate list of students in double degree
-unique_erasmus_locations <- 
-  df_locations_available_clean %>% 
-  mutate(unique_erasmus_locations = str_extract(sede_ospitante, "^[^-]+")) %>% 
-  mutate(unique_erasmus_locations = str_trim(unique_erasmus_locations)) %>% 
-  select(unique_erasmus_locations) %>% 
-  pull()
+
+### ****** This may need to change to use 'nome accordo' instead of cleaning the Erasmus Location
+# unique_erasmus_locations <- 
+#   df_locations_available_clean %>% 
+#   mutate(unique_erasmus_locations = str_extract(sede_ospitante, "^[^-]+")) %>% 
+#   mutate(unique_erasmus_locations = str_trim(unique_erasmus_locations)) %>% 
+#   select(unique_erasmus_locations) %>% 
+#   pull()
+
+unique_agreements <- 
+  df_locations_available_clean %>% distinct(nome_accordo) %>% pull()
   
 
-df_dd_assignment_notes <- 
-  df_student_double_degree %>% 
-  mutate(double_degree_notes = if_else(codice_erasmus_sedi %in% unique_erasmus_locations, 
-                                       paste("Double Degree Student, Erasmus Location: ", codice_erasmus_sedi),
-                                       paste("Student assigned to location not in Erasmus list: ", codice_erasmus_sedi))) %>%
-  mutate(double_degree_notes = if_else(codice_erasmus_sedi == "no admitted", "Student not admitted to Double Degree Program", double_degree_notes)) 
+### ****** This may also need to be redone using 'nome accordo' instead of the Earasmus Location
+# df_dd_assignment_notes <- 
+#   df_student_double_degree %>% 
+#   mutate(double_degree_notes = if_else(codice_erasmus_sedi %in% unique_erasmus_locations, 
+#                                        paste("Double Degree Student, Erasmus Location: ", codice_erasmus_sedi),
+#                                        paste("Student assigned to location not in Erasmus list: ", codice_erasmus_sedi))) %>%
+#   mutate(double_degree_notes = if_else(codice_erasmus_sedi == "no admitted", "Student not admitted to Double Degree Program", double_degree_notes)) 
+
+df_dd_assignment_notes <-
+  df_student_double_degree %>%
+  mutate(double_degree_notes = if_else(nome_accordo %in% unique_agreements,
+                                       paste("Double Degree Student, Erasmus Location: ", nome_accordo),
+                                       paste("Student assigned to location not in Erasmus list: ", nome_accordo))) %>%
+  mutate(double_degree_notes = if_else(codice_erasmus_sedi == "no admitted", "Student not admitted to Double Degree Program", double_degree_notes))
+
+### ***********
+
 
 dd_students_not_admitted <-
   df_dd_assignment_notes %>% 
@@ -123,17 +139,36 @@ dd_students_assigned <-
   select(matricola) %>% 
   pull()
 
-dd <- 
-  df_dd_assignment_notes %>% 
-  select(matricola, master, codice_erasmus_sedi, double_degree_notes) %>% 
-  left_join(df_locations_complete, ., by = c("matricola" = "matricola", "codiceerasmus" = "codice_erasmus_sedi")) %>% 
-  select(cognome:matricola, choice_number:nomeaccordo, master:double_degree_notes) %>% 
-  mutate(double_degree_notes = if_else(is.na(double_degree_notes) & matricola %in% dd_students_not_admitted, 
+# dd <- 
+#   df_dd_assignment_notes %>% 
+#   mutate(matricola = as.numeric(matricola)) %>% 
+#   select(matricola, master, codice_erasmus_sedi, double_degree_notes) %>% 
+#   left_join(df_locations_complete, ., by = c("matricola" = "matricola", "codiceerasmus" = "codice_erasmus_sedi")) %>% 
+#   select(cognome:matricola, choice_number:nomeaccordo, master:double_degree_notes) %>% 
+#   mutate(double_degree_notes = if_else(is.na(double_degree_notes) & matricola %in% dd_students_not_admitted, 
+#                                        "Double Degree student not admitted to double degree",
+#                                        double_degree_notes)) %>% 
+#   mutate(double_degree_notes = if_else(is.na(double_degree_notes) & matricola %in% dd_students_assigned, 
+#                                        "Student already assigned to different Double Degree destination",
+#                                        double_degree_notes)) %>% 
+#   select(matricola, nomeaccordo, double_degree_notes)
+
+### IMPORTANT NOTE: If a student is assigned a DD destination, but screws up the 'nome accordo' there is not match
+### and that student disappears from this list. The result is that the student does appear in the "esito_selezioni.xlsx"
+### file but it has a blank assigned destination, which generates an error during individual report genearion.
+### For now I handle this manually, so this is just a warning.
+dd <-
+  df_dd_assignment_notes %>%
+  mutate(matricola = as.numeric(matricola)) %>%
+  select(matricola, master, nome_accordo, double_degree_notes) %>%
+  left_join(df_locations_complete, ., by = c("matricola" = "matricola", "nomeaccordo" = "nome_accordo")) %>%
+  select(cognome:matricola, choice_number:nomeaccordo, master:double_degree_notes) %>%
+  mutate(double_degree_notes = if_else(is.na(double_degree_notes) & matricola %in% dd_students_not_admitted,
                                        "Double Degree student not admitted to double degree",
-                                       double_degree_notes)) %>% 
-  mutate(double_degree_notes = if_else(is.na(double_degree_notes) & matricola %in% dd_students_assigned, 
+                                       double_degree_notes)) %>%
+  mutate(double_degree_notes = if_else(is.na(double_degree_notes) & matricola %in% dd_students_assigned,
                                        "Student already assigned to different Double Degree destination",
-                                       double_degree_notes)) %>% 
+                                       double_degree_notes)) %>%
   select(matricola, nomeaccordo, double_degree_notes)
 
 ### Augment the student personal data with ranking and a note about selected
@@ -157,7 +192,8 @@ l <-
   df_locations_complete %>% 
   select(cognome, nome, matricola, nomeaccordo, nome_accordo, lingua_1, livello_lingua_1, lingua_2, livello_lingua_2) %>% 
   left_join(., df_student_language, by = join_by(matricola), relationship = "many-to-many") %>% 
-  mutate(language = map_language_name(lingua)) %>%
+#  mutate(language = map_language_name(lingua)) %>%
+  mutate(language = lingua) %>%
   mutate_at(vars(starts_with("livello")), ~map_language_levels(.)) # Replace the values of livello_LANGUAGE variables
   
 ### Evaluate language requirements for each student and return list of student/destination
@@ -178,7 +214,7 @@ l <-
 ### 1. A student must have chosen a location that offers schooling at the level they are at: triennale or magistrale
 ### 2. A student must have chosen a location where the ISCED of their "corso di studi" is in the set of ISCEDs the location meets
 ### 3. The above rule is superseded for students who are in the third year. For those students ISCED congurence is not required.
-# Validate if they have the correct livello di studio for each location and the correct ISCED
+### Validate if they have the correct livello di studio for each location and the correct ISCED
 d <-
   df_locations_complete %>%
     select(cognome:tipo_di_iscrizione, choice_number:nomeaccordo, nome_accordo:isced, livelli_di_studio, corsi_di_studio) %>%
@@ -190,7 +226,13 @@ d <-
   mutate(isced_requirement = if_else(str_detect(isced_tabella_conversione, isced_clean), "ISCED requirement met successfully", "ISCED requirement not met")) %>% 
   mutate(isced_requirement = if_else(anno_di_corso == 3, "ISCED requirement met successfully because student in third year", isced_requirement)) %>% 
   select(matricola, nomeaccordo, level_requirement, isced_requirement)
-  
+
+### Add one more note to the above transitory dataframe d. 
+### If a student is in the Double Degree list test whether the 'nome accordo' he has been assigned
+### appears as one of the selections for erasmus he/she made. If YES, then state 'DD-Erasmus match requirement met successfully'
+### otherwise note: 'DD-Erasmus match requirement not met'
+
+### ************ CODE GOES HERE IF NEEDED, but it think it is not needed.
 
 ### Create file with student-location selections validated and appropriate notes for failing each test of validation
 ### Merge language requirement and ISCED requirements results back into df_locations_complete

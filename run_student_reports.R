@@ -13,8 +13,11 @@ filename <- df %>%
 matr <- df %>% 
   select(matricola) %>% pull()
 
-filename <- filename[1:10]
-matr <- matr[1:10]
+# filename <- filename[1:3]
+# matr <- matr[1:3]
+
+filename <- filename
+matr <- matr
 
 
 # Loop through students and render the R Markdown file

@@ -29,8 +29,7 @@ df_not_ranked <- read_xlsx(path = "./output/esito_selezioni.xlsx",
                                  sheet = "students not ranked", range = cell_cols("A:I"))
 
 ma <- params$p_student_number
-# ma <- "512786"
-# ma <- "512745"
+# ma <- "534647"
 
 cognome <- df_esiti %>%
   filter(matricola == ma) %>%
@@ -75,46 +74,46 @@ uni <- df_esiti %>%
 
 nazione <- df_esiti %>%
   filter(matricola == ma) %>%
-  select(paese) %>% pull() %>% 
+  select(paese) %>% pull() %>%
   str_to_title()
 
 accordo <- df_esiti %>%
   filter(matricola == ma) %>%
   select(nome_accordo) %>% pull()
 
-cond <- 
-  df_esiti %>% 
+cond <-
+  df_esiti %>%
   filter(matricola == ma) %>%
-  select(assigned_locations) %>% 
-  pull() %>% 
+  select(assigned_locations) %>%
+  pull() %>%
   str_starts("Student assigned to location not in Erasmus lis")
 
 if (cond) {
   uni <- df_esiti %>%
     filter(matricola == ma) %>%
-    select(assigned_locations) %>% 
-    pull() %>% 
-    str_split(": ", n = 2) %>% 
-    map_chr(2) %>% 
+    select(assigned_locations) %>%
+    pull() %>%
+    str_split(": ", n = 2) %>%
+    map_chr(2) %>%
     trimws()
-  
+
   nazione <- "In quanto studente assegnato a destinazione Double Degree non Erasmus"
-  
+
   accordo <- "Non disponibile"
 }
 
-cond <- 
-  df_esiti %>% 
+cond <-
+  df_esiti %>%
   filter(matricola == ma) %>%
-  select(assigned_locations) %>% 
-  pull() %>% 
+  select(assigned_locations) %>%
+  pull() %>%
   str_starts("All valid choices were taken - no assignment")
 
 if (cond) {
   uni <- "Nessuna assegnazione possibile"
-  
+
   nazione <- "tutte le destinazioni erano esaurite al momento dell'assegnazione"
-  
+
   accordo <- "Non disponibile"
 }
 
@@ -154,8 +153,23 @@ Per ogni destinazione scelta, la tabella qui sotto riporta i risultati delle ver
 ```{r}
 tbl <- 
   df_note %>% filter(matricola == ma) %>%
-  select(choice_number, sede_ospitante, language_requirement, level_requirement, isced_requirement)
-knitr::kable(tbl, caption = "Elegibility checks")
+  select(choice_number, sede_ospitante, language_requirement)
+knitr::kable(tbl, caption = "Language Requirement")
+
+tbl <- 
+  df_note %>% filter(matricola == ma) %>%
+  select(choice_number, sede_ospitante, level_requirement)
+knitr::kable(tbl, caption = "Degree Level Requirement")
+
+tbl <- 
+  df_note %>% filter(matricola == ma) %>%
+  select(choice_number, sede_ospitante, isced_requirement)
+knitr::kable(tbl, caption = "ISCED Requirement")
+
+tbl <- 
+  df_note %>% filter(matricola == ma) %>%
+  select(choice_number, sede_ospitante, double_degree_notes)
+knitr::kable(tbl, caption = "Double Degreee Selection")
 
 ```
 
