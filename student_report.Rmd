@@ -1,7 +1,7 @@
 ---
 title: "Commissione Erasmus - Assegnazione Destinazioni Erasmus 2024"
 subtitle: "Individual Student Report"
-author: "Gabriele Piccoli"
+author: "Commissione Erasmus DEM - 2024"
 date: "`r Sys.Date()`"
 output: pdf_document
 params:

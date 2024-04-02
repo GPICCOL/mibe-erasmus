@@ -15,12 +15,17 @@ df_isced <- read_xlsx(path = "./data/tabella_conversione-ISCED_CODE.xlsx", sheet
   rename(isced_tabella_conversione = isced)
   
 # List of students who have asked for a double degree assignment
+# Important step at the end since they sometimes have one and sometime two spaces
+# between the nation and city codes in the nome accordo
 df_student_double_degree <- read_xlsx(path = "./data/dd_candidati2024.xlsx", sheet = "sheet", range = cell_cols("A:F")) %>% 
   rename(matricola = MATRICOLA, cognome = Last_Name, nome = First_Name, 
          master = Master, codice_erasmus_sedi = CODICE_ERASMUS_SEDI, nome_accordo = MESI) %>% 
-  mutate(matricola = as.character(matricola))
+  mutate(matricola = as.character(matricola), 
+         nome_accordo = str_replace_all(nome_accordo, "\\s{2,}", " ")) 
 
 # List of available locations and their characteristics
+# Important step at the end since they sometimes have one and sometime two spaces
+# between the nation and city codes in the nome accordo
 df_locations_available <- read_xlsx(path = "./data/sedi ERASTU 2024-25 - Scienze Economiche e Aziendali.xlsx", 
                  sheet = "Foglio1", range = cell_cols("A:N")) %>% 
   rename(area_erasmus = `AREA DI STUDI ERASMUS`, nome_accordo = `NOME DELL'ACCORDO`,
@@ -28,7 +33,9 @@ df_locations_available <- read_xlsx(path = "./data/sedi ERASTU 2024-25 - Scienze
   n_posti = `N. POSTI`, durata = `DURATA INDICATIVA PERIODO (mesi)`,
   livelli_di_studio = `LIVELLI DI STUDIO AMMISSIBILI`, corsi_di_studio = `CORSI DI STUDIO AMMISSIBILI`,
   note = NOTE, lingua_1 = `LINGUA DI ISTRUZIONE 1`, livello_lingua_1 = `LIVELLO LINGUA DI ISTRUZIONE 1`,
-  lingua_2 = `LINGUA DI ISTRUZIONE 2`, livello_lingua_2 = `LIVELLO LINGUA DI ISTRUZIONE 2`)
+  lingua_2 = `LINGUA DI ISTRUZIONE 2`, livello_lingua_2 = `LIVELLO LINGUA DI ISTRUZIONE 2`) %>% 
+  mutate(nome_accordo = str_replace_all(nome_accordo, "\\s{2,}", " "))
+
   # certificazione_linguistica = `CERTIFICAZIONE LINGUISTICA`, 
   # scadenza_urgente = `EVENTUALE SCADENZA APPLICATION URGENTE 1° SEMESTRE`)
 
@@ -43,6 +50,8 @@ df_student_personal <- read_xlsx(path = "./data/selezioni_erastudio_24-25-scienz
          punteggio_normalizzato_a_100 = `PUNTEGGIO NORMALIZZATO A 100`, note_personal = NOTE)
 
 # List of students destination selection
+# Important step at the end since they sometimes have one and sometime two spaces
+# between the nation and city codes in the nome accordo
 df_student_destinations <- read_xlsx(path = "./data/selezioni_erastudio_24-25-scienze_economiche_e_aziendali.xlsx",
                                sheet = "Destinazioni", range = cell_cols("A:V")) %>% 
   rename(cognome = COGNOME, nome = NOME, matricola = MATRICOLA, corso_di_studi = `CORSO DI STUDI`, 
@@ -54,7 +63,10 @@ df_student_destinations <- read_xlsx(path = "./data/selezioni_erastudio_24-25-sc
          numeroposti_2 = `Numero di posti per l'accordo (2)`, numeromesi_2 = `Numero di mesi (2)`, 
          paese_3 = `Paese dell'istituzione scelta (3)`, istituzione_3 = `Istituzione scelta (3)`, 
          codiceerasmus_3 = `Codice Erasmus Istituzione (3)`, nomeaccordo_3 = `Nome dell'accordo (3)`, 
-         numeroposti_3 = `Numero di posti per l'accordo (3)`, numeromesi_3 = `Numero di mesi (3)`)
+         numeroposti_3 = `Numero di posti per l'accordo (3)`, numeromesi_3 = `Numero di mesi (3)`) %>% 
+  mutate(nomeaccordo_1 = str_replace_all(nomeaccordo_1, "\\s{2,}", " "),
+         nomeaccordo_2 = str_replace_all(nomeaccordo_2, "\\s{2,}", " "),
+         nomeaccordo_3 = str_replace_all(nomeaccordo_3, "\\s{2,}", " "))
 
 # List of students language competence
 df_student_language <- read_xlsx(path = "./data/selezioni_erastudio_24-25-scienze_economiche_e_aziendali.xlsx",

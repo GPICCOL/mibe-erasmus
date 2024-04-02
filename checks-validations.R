@@ -2,7 +2,8 @@ aaa <- read_xlsx(path = "./output/esito_selezioni.xlsx", sheet = "esiti", range 
 ddd <- read_xlsx(path = "./data/dd_candidati2024.xlsx", sheet = "sheet", range = cell_cols("A:F")) %>% 
   rename(matricola = MATRICOLA, cognome = Last_Name, nome = First_Name, 
          master = Master, codice_erasmus_sedi = CODICE_ERASMUS_SEDI, nome_accordo = MESI) %>% 
-  mutate(matricola = as.character(matricola))
+  mutate(matricola = as.character(matricola), 
+         nome_accordo = str_replace_all(nome_accordo, "\\s{2,}", " ")) 
 
 aaa <- aaa %>% select(matricola, cognome, nome, assigned_locations)
 
