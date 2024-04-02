@@ -16,10 +16,6 @@ df_locations_validated <-
            isced_requirement == "ISCED requirement met successfully") %>%
   filter(!double_degree_notes == "Student already assigned to different Double Degree destination" | is.na(double_degree_notes))
 
-### Here we override the "discrezionale" if needed 
-### Read a file with matricola and discrezionale and replace values where needed, all others stay at zero
-
-
 ### Data preparation for the matching algo
 ### First rank students and make a ranked students vector to use later
 ### Students are first ranked by total points, ties go to the lowest matricola (seniority rule)
@@ -59,11 +55,15 @@ df_assignment <- tibble(matricola = numeric(), assigned_locations = character())
 
 # Loop through students in order of their rank
 for (m in ranked_students) {
+  print(m)
   
   # Extract the preference of the given student
   choices <- df_locations_validated %>% 
     filter(matricola == m) %>% 
     pull(nomeaccordo)
+  
+  print(choices)
+  student_assignment <- "No Erasmus assignment possible - Student has zero valid choices"
   
   # Loop through each choice until a valid one is found
   for (choice in choices) {
@@ -74,7 +74,7 @@ for (m in ranked_students) {
       break  # Stop execution if a valid choice is found
     }
     if (is.null(student_assignment)) {
-      student_assignment <- "All valid choices were taken - no assignment possible at this time"
+      student_assignment <- "No Erasmus assignment possible at this time - All valid choices were taken before"
   }
   }
   # Append the results to the tibble

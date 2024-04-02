@@ -10,6 +10,7 @@ map_language_levels <- function(x) {
     x == "B2" ~ 4,
     x == "C1" ~ 5,
     x == "C2" ~ 6,
+    x == "Non A2" ~ 0,
     TRUE ~ NA_integer_ ## CAREFUL, this one does not handle "non A2" cases!
   )
 }

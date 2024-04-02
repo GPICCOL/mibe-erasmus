@@ -64,7 +64,7 @@ corso di studi in **`r corso`**,
 
 tipologia: **`r tipo`**. 
 
-Lo studente ha richiesto la seguente tipologia di assegnazione: **`r domanda`**.
+Lo studente ha richiesto la seguente tipologia di assegnazione **Erasmus**: **`r domanda`**.
 
 
 ```{r}
@@ -119,7 +119,7 @@ if (cond) {
 
 ```
 
-L'assegnazione é per la destinazione: **`r uni`**, **`r nazione`**.
+L'assegnazione é per la destinazione **Erasmus**: **`r uni`**, **`r nazione`**.
 
 nel quadro dell'accordo: **`r accordo`**.
 
@@ -139,7 +139,7 @@ In virtú dei punteggi sotto riportati, la posizione della graduatoria ottenuta 
 ```{r}
 tbl <- 
   df_esiti %>% filter(matricola == ma) %>%
-  select(punteggio_normalizzato_a_100,	punteggio_motivazione,	discrezionale,	punteggio_totale)
+  select(punteggio_normalizzato_a_100,	punteggio_motivazione, punteggio_totale)
 knitr::kable(tbl, caption = "Punteggi")
 
 

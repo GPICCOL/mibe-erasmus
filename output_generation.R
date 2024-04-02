@@ -14,7 +14,7 @@ x <-
 df_esito_selezioni <- 
   df_student_personal_for_output %>% 
   select(cognome, nome, matricola, corso_di_studi, tipo_corso_di_studi, punteggio_normalizzato_a_100, 
-         punteggio_motivazione, discrezionale, punteggio_totale, posizione_graduatoria, tipologia_assegnazione) %>% 
+         punteggio_motivazione, punteggio_totale, posizione_graduatoria, tipologia_assegnazione) %>% 
   left_join(., x, by = join_by(matricola), keep = FALSE)
 
 # Write output files

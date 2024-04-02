@@ -22,7 +22,7 @@ df_student_double_degree <- read_xlsx(path = "./data/dd_candidati2024.xlsx", she
 
 # List of available locations and their characteristics
 df_locations_available <- read_xlsx(path = "./data/sedi ERASTU 2024-25 - Scienze Economiche e Aziendali.xlsx", 
-                 sheet = "Foglio1", range = cell_cols("A:P")) %>% 
+                 sheet = "Foglio1", range = cell_cols("A:N")) %>% 
   rename(area_erasmus = `AREA DI STUDI ERASMUS`, nome_accordo = `NOME DELL'ACCORDO`,
   sede_ospitante = `SEDE OSPITANTE (codice Erasmus e nome)`, paese = PAESE, isced = ISCED,
   n_posti = `N. POSTI`, durata = `DURATA INDICATIVA PERIODO (mesi)`,
@@ -83,7 +83,7 @@ df_locations_available_clean <-
   
 df_locations_complete <- left_join(df_student_destination_clean, df_locations_available_clean, 
             by = c("nomeaccordo" = "nome_accordo"), keep = TRUE, relationship = "many-to-many") %>% 
-  select(-cognome, -nome, -corso_di_studi) %>% 
+  select(-cognome, -nome, -corso_di_studi) %>%
   left_join(df_student_personal, ., by = join_by(matricola), keep = FALSE, relationship = "many-to-many")
 
 ### Evaluate Double Degree students to eliminate those who are going to destinations *not erasmus*
@@ -155,7 +155,7 @@ dd_students_assigned <-
 
 ### IMPORTANT NOTE: If a student is assigned a DD destination, but screws up the 'nome accordo' there is not match
 ### and that student disappears from this list. The result is that the student does appear in the "esito_selezioni.xlsx"
-### file but it has a blank assigned destination, which generates an error during individual report genearion.
+### file but it has a blank assigned destination, which generates an error during individual report generation.
 ### For now I handle this manually, so this is just a warning.
 dd <-
   df_dd_assignment_notes %>%
@@ -177,27 +177,26 @@ df_student_personal <-
   df_student_personal %>% 
   mutate(matricola = as.integer(matricola)) %>% 
   mutate(punteggio_motivazione = if_else(matricola %in% dd_students_assigned, 50, 25)) %>% 
-  mutate(discrezionale = 0) %>% 
-  mutate(punteggio_totale = punteggio_normalizzato_a_100 + punteggio_motivazione + discrezionale) %>% 
+  mutate(punteggio_totale = punteggio_normalizzato_a_100 + punteggio_motivazione) %>% 
   arrange(desc(punteggio_totale), matricola) %>% 
   distinct() %>% 
   mutate(matricola = as.character(matricola)) %>% 
   mutate(posizione_graduatoria = row_number()) %>% 
   mutate(tipologia_assegnazione = if_else(matricola %in% setdiff(df_student_double_degree$matricola, dd_students_not_admitted), 
-                                          "Double Degree and Erasmus", "Erasmus Only"))
+                                          "Applied for Double Degree and Erasmus", "Applied for Erasmus Only"))
 
 ### Validate Language Requirements and provide appropriate notes to df_locations_complete
 ### Create appropriate file with language mappings and scores on language levels
 l <-
   df_locations_complete %>% 
   select(cognome, nome, matricola, nomeaccordo, nome_accordo, lingua_1, livello_lingua_1, lingua_2, livello_lingua_2) %>% 
-  left_join(., df_student_language, by = join_by(matricola), relationship = "many-to-many") %>% 
+  left_join(., df_student_language, by = join_by(matricola), relationship = "many-to-many") %>%
 #  mutate(language = map_language_name(lingua)) %>%
   mutate(language = lingua) %>%
   mutate_at(vars(starts_with("livello")), ~map_language_levels(.)) # Replace the values of livello_LANGUAGE variables
   
 ### Evaluate language requirements for each student and return list of student/destination
-### A student must meet or exeed the minimum language requirement set by the destination
+### A student must meet or exceed the minimum language requirement set by the destination
 ### on at least one of the two languages required
 l <- 
   l %>%   
@@ -213,7 +212,7 @@ l <-
 ### This code implements the following rules
 ### 1. A student must have chosen a location that offers schooling at the level they are at: triennale or magistrale
 ### 2. A student must have chosen a location where the ISCED of their "corso di studi" is in the set of ISCEDs the location meets
-### 3. The above rule is superseded for students who are in the third year. For those students ISCED congurence is not required.
+### 3. The above rule is superseded for students who are in the third year. For those students ISCED congruence is not required.
 ### Validate if they have the correct livello di studio for each location and the correct ISCED
 d <-
   df_locations_complete %>%
@@ -227,13 +226,6 @@ d <-
   mutate(isced_requirement = if_else(anno_di_corso == 3, "ISCED requirement met successfully because student in third year", isced_requirement)) %>% 
   select(matricola, nomeaccordo, level_requirement, isced_requirement)
 
-### Add one more note to the above transitory dataframe d. 
-### If a student is in the Double Degree list test whether the 'nome accordo' he has been assigned
-### appears as one of the selections for erasmus he/she made. If YES, then state 'DD-Erasmus match requirement met successfully'
-### otherwise note: 'DD-Erasmus match requirement not met'
-
-### ************ CODE GOES HERE IF NEEDED, but it think it is not needed.
-
 ### Create file with student-location selections validated and appropriate notes for failing each test of validation
 ### Merge language requirement and ISCED requirements results back into df_locations_complete
 ### This file will list all students and all the locations they originally selected. For each of this location we have notes
@@ -242,7 +234,6 @@ d <-
 df_locations_validated_all <- 
   df_locations_complete %>% 
   mutate(punteggio_motivazione = if_else(matricola %in% dd_students_assigned, 50, 25)) %>% 
-  mutate(discrezionale = 0) %>% 
   left_join(., l, by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
   mutate(language_requirement = replace(language_requirement, is.na(language_requirement), "Language requirement not met")) %>% 
   left_join(., d, by = c("matricola" = "matricola", "nomeaccordo" = "nomeaccordo")) %>% 
