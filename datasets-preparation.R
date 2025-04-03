@@ -39,6 +39,21 @@ df_locations_available <- read_xlsx(path = "./data/sedi ERASMUS SMS 2025-26_Scie
   # certificazione_linguistica = `CERTIFICAZIONE LINGUISTICA`, 
   # scadenza_urgente = `EVENTUALE SCADENZA APPLICATION URGENTE 1° SEMESTRE`)
 
+# Preprocessing of motivation scores and elimination of those who did not do the colloquio
+# Eliminate those that did not show up (marked as ASSENTE)
+df_motivation_raw <- read_xlsx(path = "./data/selezioni_erastudio_25-26-scienze_economiche_e_aziendali (3).xlsx",
+                               sheet = "Esito selezioni", range = cell_cols("A:G")) %>% 
+  select(3, 7) %>% 
+  rename(matricola = MATRICOLA, punteggio_motivazione = `PUNTEGGIO MOTIVAZIONE (max 50 punti)`)
+
+matricole_assenti <- df_motivation_raw %>%        # Extract vector of matricola where punteggio_motivazione is "ASSENTE"
+  filter(punteggio_motivazione == "ASSENTE") %>%
+  pull(matricola)
+
+df_motivation_clean <- df_motivation_raw %>%      # Filter out the ASSENTE and cast to numeric
+  filter(!matricola %in% matricole_assenti) %>%
+  mutate(punteggio_motivazione = as.numeric(punteggio_motivazione))
+
 # List of participating students and their personal data
 df_student_personal <- read_xlsx(path = "./data/selezioni_erastudio_25-26-scienze_economiche_e_aziendali (3).xlsx",
                  sheet = "Dati personali e carriera", range = cell_cols("A:M")) %>% 
@@ -47,7 +62,12 @@ df_student_personal <- read_xlsx(path = "./data/selezioni_erastudio_25-26-scienz
          anno_di_corso = `ANNO DI CORSO`, tipo_di_iscrizione = `TIPO DI ISCRIZIONE`, 
          cfu_conseguiti = `CFU CONSEGUITI`, 
          media_pesata = `MEDIA PESATA`, punteggio_di_merito = `PUNTEGGIO DI MERITO`, 
-         punteggio_normalizzato_a_100 = `PUNTEGGIO NORMALIZZATO A 100`, note_personal = NOTE)
+         punteggio_normalizzato_a_100 = `PUNTEGGIO NORMALIZZATO A 100`, note_personal = NOTE) %>% 
+  filter(!matricola %in% matricole_assenti)
+
+# Add punteggio motivazione to the student data df_student_personal
+df_student_personal <- df_student_personal %>% 
+  left_join(., df_motivation_clean, by = "matricola")
 
 # List of students destination selection
 # Important step at the end since they sometimes have one and sometime two spaces
@@ -63,14 +83,17 @@ df_student_destinations <- read_xlsx(path = "./data/selezioni_erastudio_25-26-sc
          codiceerasmus_3 = `Codice Erasmus Istituzione (3)`, nomeaccordo_3 = `Nome dell'accordo (3)`) %>% 
   mutate(nomeaccordo_1 = str_replace_all(nomeaccordo_1, "\\s{2,}", " "),
          nomeaccordo_2 = str_replace_all(nomeaccordo_2, "\\s{2,}", " "),
-         nomeaccordo_3 = str_replace_all(nomeaccordo_3, "\\s{2,}", " "))
+         nomeaccordo_3 = str_replace_all(nomeaccordo_3, "\\s{2,}", " ")) %>% 
+  filter(!matricola %in% matricole_assenti)
 
 # List of students language competence
 df_student_language <- read_xlsx(path = "./data/selezioni_erastudio_25-26-scienze_economiche_e_aziendali (3).xlsx",
                                      sheet = "Competenze linguistiche", range = cell_cols("A:H")) %>% 
   rename(cognome = COGNOME, nome = NOME, matricola = MATRICOLA, corso_studi = `CORSO DI STUDI`, 
          tipo_corso_studi = `TIPO CORSO DI STUDI`, lingua = LINGUA, livello = LIVELLO, note_lingua = NOTE) %>% 
-  select(-cognome, -nome, - corso_studi, -tipo_corso_studi)
+  select(-cognome, -nome, - corso_studi, -tipo_corso_studi) %>% 
+  filter(!matricola %in% matricole_assenti)
+
 
 ### Data Preparation
 ### Create file for analyzing location and program validation
@@ -183,12 +206,13 @@ dd <-
 
 ### Augment the student personal data with ranking and a note about selected
 ### programs: Double Degree Only, Erasmus Only or Double Degree and Erasmus
-### In 2025 they decided no extra motivazione, so I set it to 0 
+### In 2025 they decided to pull motivation from the "Esito selezioni" sheet 
+### so it is already in here and needs no mutate
+
 df_student_personal <- 
   df_student_personal %>% 
 # mutate(matricola = as.integer(matricola)) %>% 
 # mutate(punteggio_motivazione = if_else(matricola %in% dd_students_assigned, 50, 25)) %>% 
-  mutate(punteggio_motivazione = 0) %>% 
   mutate(punteggio_totale = punteggio_normalizzato_a_100 + punteggio_motivazione) %>% 
   arrange(desc(punteggio_totale), matricola) %>% 
   distinct() %>% 
